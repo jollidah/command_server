@@ -5,15 +5,19 @@ ENV SQLX_OFFLINE=true
 WORKDIR /src
 COPY . .
 
-# Before running this, make sure sqlx-data.json exists!
+# Ensure sqlx-data.json exists before build
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
 # stage for backend binary 
-FROM alpine:latest AS BE
+FROM alpine:latest AS command_server
+
+# Copy migrations
 COPY --from=builder /src/migrations /migrations
 
-# COPY --from=builder /src/target/x86_64-unknown-linux-musl/release/BE /BE
+# Copy binary file
+COPY --from=builder /src/target/x86_64-unknown-linux-musl/release/command_server /command_server
+
 ENV SQLX_OFFLINE=true 
-CMD [ "/BE" ]
+CMD [ "/command_server" ]
 EXPOSE 80
-LABEL service="BE"
+LABEL service="command_server"

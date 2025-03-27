@@ -1,15 +1,16 @@
 name: CI Test
 on: 
   push:
+    branches-ignore:
+        - "deploy/*"
+        - "main"
 
 env:
   DATABASE_URL: postgres://jollidah:abc123@localhost:5432/aut_cloud
 
 jobs:
   ci-test:
-    runs-on: 
-      group: ci-cd-runner
-      labels: self-hosted-linux-x64
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:

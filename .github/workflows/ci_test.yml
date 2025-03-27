@@ -74,7 +74,7 @@ jobs:
     - name: clean_up
       if: always()
       run: |
-        docker-compose down -v
+        docker compose down -v
         ls -la ./
         rm -rf ./* || true
         rm -rf ./.??* || true

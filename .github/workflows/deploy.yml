@@ -1,0 +1,46 @@
+name: Build & Push Backend Image to GHCR
+
+on:
+  push:
+    branches: ["deploy/*"]
+
+env:
+  USER_NAME: jollidah
+  REPOSITORY_NAME: gitops
+  REGISTRY: GITHUB
+  CONTAINER_REGISTRY_URL: ghcr.io
+
+jobs:
+  build-and-push:
+    name: Build & Push Backend Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get image tag (version)
+        id: image
+        run: |
+          VERSION="${GITHUB_REF##*/}.$(echo ${{ github.sha }} | cut -c -4)"
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        if: env.REGISTRY == 'GITHUB'
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.CONTAINER_REGISTRY_URL }}/${{ env.USER_NAME }}/${{ env.REPOSITORY_NAME }}:${{ steps.image.outputs.version }}
+

@@ -6,7 +6,7 @@ on:
 
 env:
   USER_NAME: jollidah
-  REPOSITORY_NAME: gitops
+  REPOSITORY_NAME: be
   REGISTRY: GITHUB
   CONTAINER_REGISTRY_URL: ghcr.io
 

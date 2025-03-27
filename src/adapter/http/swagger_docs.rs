@@ -1,6 +1,6 @@
-use utoipa::OpenApi;
 use super::routes::auth;
 use crate::adapter::http::schemas::UserAccount;
+use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(

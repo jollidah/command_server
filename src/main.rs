@@ -27,10 +27,10 @@ async fn main() {
 
     let service_name = "/command_server";
 
-    let swagger = Router::new().merge(
-		SwaggerUi::new(service_name.to_string() + "/api/docs")
-			.url(service_name.to_string() + "/api/docs/auth/openapi.json", AuthDoc::openapi())
-	);
+    let swagger = Router::new().merge(SwaggerUi::new(service_name.to_string() + "/api/docs").url(
+        service_name.to_string() + "/api/docs/auth/openapi.json",
+        AuthDoc::openapi(),
+    ));
 
     let app = Router::new()
         .nest_service(service_name, service_routers)

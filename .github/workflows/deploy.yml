@@ -43,4 +43,3 @@ jobs:
           push: true
           tags: |
             ${{ env.CONTAINER_REGISTRY_URL }}/${{ env.USER_NAME }}/${{ env.REPOSITORY_NAME }}:${{ steps.image.outputs.version }}
-

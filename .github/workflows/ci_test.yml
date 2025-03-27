@@ -6,7 +6,7 @@ on:
         - "main"
 
 env:
-  DATABASE_URL: postgres://jollidah:abc123@localhost:5432/aut_cloud
+  DATABASE_URL: postgres://test:test123@localhost:5432/aut_cloud
 
 jobs:
   ci-test:
@@ -36,6 +36,15 @@ jobs:
       with:
         command: fmt
         args: --all -- --check
+
+    - name: create .env file
+      run: |
+            cat > .env << EOF
+            DATABASE_URL=postgres://test:test123@localhost:5432/aut_cloud
+            DB_USER=test
+            DB_PASSWORD=test123
+            DB_NAME=aut_cloud
+            EOF
 
     - name: load up docker 
       run: |

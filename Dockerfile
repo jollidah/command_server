@@ -6,7 +6,7 @@ WORKDIR /src
 COPY . .
 
 # Ensure sqlx-data.json exists before build
-RUN cargo build --release --target x86_64-unknown-linux-musl
+# RUN cargo build --release --target x86_64-unknown-linux-musl
 
 # stage for backend binary 
 FROM alpine:latest AS command_server

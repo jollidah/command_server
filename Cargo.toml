@@ -26,3 +26,13 @@ tokio = { version = "*", features = ["full"] }
 # Datatype
 uuid = { version = "*", features = ["v4", "serde"] }
 chrono = { version = "*", features = ["serde"] }
+
+sqlx = { version = "*", features = [
+    "runtime-tokio-rustls",
+    "migrate",
+    "postgres",
+    "uuid",
+    "chrono",
+    "json",
+    "rust_decimal"
+] }

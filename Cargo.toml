@@ -10,7 +10,7 @@ serde_json = "*"
 dotenv = { version = "*" }
 tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
-reqwest = { version = "*", features = ["json"] }
+reqwest = { version = "*", features = ["json", "rustls-tls"] }
 
 tower-http = { version = "^0.5", features = ["trace", "cors"] }
 axum = { version = "^0.7", features = ["macros"] }

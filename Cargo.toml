@@ -5,8 +5,7 @@ edition = "2021"
 
 [dependencies]
 # Web
-serde = { version = "*", features = ["derive"] }
-serde_json = "*"
+openssl = { version = "*", features = ["vendored"] }
 dotenv = { version = "*" }
 tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
@@ -36,3 +35,5 @@ sqlx = { version = "*", features = [
     "json",
     "rust_decimal"
 ] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"

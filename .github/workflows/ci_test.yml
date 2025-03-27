@@ -1,0 +1,83 @@
+name: CI Test
+on: 
+  push:
+    branches-ignore:
+        - "deploy/*"
+        - "main"
+
+env:
+  DATABASE_URL: postgres://test:test123@localhost:5432/aut_cloud
+
+jobs:
+  ci-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        toolchain: [stable]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Install toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        components: rustfmt, clippy
+        override: true
+
+    - name: database driver setup
+      run: |
+        cargo install sqlx-cli --no-default-features --features native-tls,postgres,openssl-vendored
+
+    - name: formatting
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: --all -- --check
+
+    - name: create .env file
+      run: |
+            cat > .env << EOF
+            DATABASE_URL=postgres://test:test123@localhost:5432/aut_cloud
+            DB_USER=test
+            DB_PASSWORD=test123
+            DB_NAME=aut_cloud
+            EOF
+
+    - name: load up docker 
+      run: |
+        docker compose up -d  
+        
+    - name: apply migration
+      run: |
+        sleep 2
+        sqlx migrate run --database-url $DATABASE_URL
+    - name: sqlx-data check
+      run: |
+        cargo sqlx prepare --check
+
+    - name: linting
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: -- -D warnings
+    
+
+    - name: Test 
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --locked -- --test-threads 1 --nocapture
+
+    - name: clean_up
+      if: always()
+      run: |
+        docker compose down -v
+        ls -la ./
+        rm -rf ./* || true
+        rm -rf ./.??* || true
+        ls -la ./
+    
+  

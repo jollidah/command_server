@@ -4,3 +4,36 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+# Web
+openssl = { version = "*", features = ["vendored"] }
+dotenv = { version = "*" }
+tracing = "*"
+tracing-subscriber = { version = "*", features = ["env-filter"] }
+reqwest = { version = "*", features = ["json", "rustls-tls"] }
+
+tower-http = { version = "^0.5", features = ["trace", "cors"] }
+axum = { version = "^0.7", features = ["macros"] }
+utoipa = { version = "4", features = [
+    "axum_extras",
+    "uuid",
+    "chrono",
+    "decimal",
+] }
+utoipa-swagger-ui = { version = "5", features = ["axum", "debug-embed"] }
+tokio = { version = "*", features = ["full"] }
+
+# Datatype
+uuid = { version = "*", features = ["v4", "serde"] }
+chrono = { version = "*", features = ["serde"] }
+
+sqlx = { version = "*", features = [
+    "runtime-tokio-rustls",
+    "migrate",
+    "postgres",
+    "uuid",
+    "chrono",
+    "json",
+    "rust_decimal"
+] }
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"

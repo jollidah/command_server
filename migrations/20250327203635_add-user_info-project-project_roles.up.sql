@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS account_user(
     name VARCHAR(255) NOT NULL,
     phone_num VARCHAR(255) NOT NULL,
     verified boolean NOT NULL DEFAULT 'false',
-    create_dt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    create_dt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(email)
 );
 
 CREATE TABLE IF NOT EXISTS project(

@@ -1,15 +1,22 @@
-use super::routes::auth;
-use crate::adapter::http::schemas::UserAccount;
+use crate::{adapter::http::schemas::{CheckVerification, CreateProject, CreateVerification, DeleteProject, ExpelMember, SignIn, SignUp}, domain::project::AssignRole};
+
+use super::routes::{auth, project};
 use utoipa::OpenApi;
 
 #[derive(OpenApi)]
 #[openapi(
  paths(
-    auth::test_auth,
+    auth::sign_up,
+    auth::sign_in,
+    auth::create_verification_email,
+    auth::check_verification_email,
  ),
  components(
      schemas(
-        UserAccount,
+         SignUp,
+         SignIn,
+         CreateVerification,
+         CheckVerification,
       )
  ),
  tags(
@@ -17,3 +24,25 @@ use utoipa::OpenApi;
     )
  )]
 pub struct AuthDoc;
+
+#[derive(OpenApi)]
+#[openapi(
+ paths(
+    project::assign_role,
+    project::expel_member,
+    project::create_project,
+    project::delete_project,
+ ),
+ components(
+     schemas(
+         AssignRole,
+         ExpelMember,
+         CreateProject,
+         DeleteProject,
+      )
+ ),
+ tags(
+    (name= "Project Management Service", description="Manage project")
+    )
+ )]
+pub struct ProjectDoc;

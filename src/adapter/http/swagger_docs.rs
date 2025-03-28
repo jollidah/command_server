@@ -1,4 +1,10 @@
-use crate::{adapter::http::schemas::{CheckVerification, CreateProject, CreateVerification, DeleteProject, ExpelMember, SignIn, SignUp}, domain::project::AssignRole};
+use crate::{
+    adapter::http::schemas::{
+        CheckVerification, CreateProject, CreateVerification, DeleteProject, ExpelMember, SignIn,
+        SignUp,
+    },
+    domain::project::AssignRole,
+};
 
 use super::routes::{auth, project};
 use utoipa::OpenApi;

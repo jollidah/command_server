@@ -1,6 +1,9 @@
 use std::{env, net::SocketAddr};
 
-use adapter::http::{routes::{auth::auth_router, project::project_router}, swagger_docs::{AuthDoc, ProjectDoc}};
+use adapter::http::{
+    routes::{auth::auth_router, project::project_router},
+    swagger_docs::{AuthDoc, ProjectDoc},
+};
 use axum::Router;
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -30,10 +33,16 @@ async fn main() {
 
     let service_name = "/command_server";
 
-    let swagger = Router::new()
-        .merge(SwaggerUi::new(service_name.to_string() + "/api/docs")
-        .url(service_name.to_string() + "/api/docs/auth/openapi.json", AuthDoc::openapi())
-        .url(service_name.to_string() + "/api/docs/project/openapi.json", ProjectDoc::openapi())
+    let swagger = Router::new().merge(
+        SwaggerUi::new(service_name.to_string() + "/api/docs")
+            .url(
+                service_name.to_string() + "/api/docs/auth/openapi.json",
+                AuthDoc::openapi(),
+            )
+            .url(
+                service_name.to_string() + "/api/docs/project/openapi.json",
+                ProjectDoc::openapi(),
+            ),
     );
 
     let app = Router::new()

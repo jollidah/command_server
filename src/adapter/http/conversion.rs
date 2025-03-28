@@ -19,31 +19,31 @@ impl IntoResponse for ServiceError {
     }
 }
 
-impl IntoResponse for SignUp{
+impl IntoResponse for SignUp {
     fn into_response(self) -> Response {
         Json(json!(self)).into_response()
     }
 }
 
-impl IntoResponse for SignIn{
+impl IntoResponse for SignIn {
     fn into_response(self) -> Response {
         Json(json!(self)).into_response()
     }
 }
 
-impl IntoResponse for Tokens{
+impl IntoResponse for Tokens {
     fn into_response(self) -> Response {
         Json(json!(self)).into_response()
     }
 }
 
-impl IntoResponse for CreateVerification{
+impl IntoResponse for CreateVerification {
     fn into_response(self) -> Response {
         Json(json!(self)).into_response()
     }
 }
 
-impl IntoResponse for CheckVerification{
+impl IntoResponse for CheckVerification {
     fn into_response(self) -> Response {
         Json(json!(self)).into_response()
     }

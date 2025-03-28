@@ -1,6 +1,12 @@
-use axum::{routing::{get, post}, Json, Router};
+use axum::{
+    routing::{get, post},
+    Json, Router,
+};
 
-use crate::{adapter::http::schemas::{CheckVerification, CreateVerification, SignIn, SignUp, Tokens}, errors::ServiceError};
+use crate::{
+    adapter::http::schemas::{CheckVerification, CreateVerification, SignIn, SignUp, Tokens},
+    errors::ServiceError,
+};
 
 /// Create User Account (Sign up)
 #[axum::debug_handler]
@@ -27,12 +33,10 @@ pub async fn sign_up(Json(_json): Json<SignUp>) -> Result<(), ServiceError> {
     )
 )]
 pub async fn sign_in(Json(_json): Json<SignIn>) -> Result<Tokens, ServiceError> {
-    Ok(
-        Tokens{
-            access_token: "access_token".to_string(),
-            refresh_token: "refresh_token".to_string()
-        }
-    )
+    Ok(Tokens {
+        access_token: "access_token".to_string(),
+        refresh_token: "refresh_token".to_string(),
+    })
 }
 
 /// Send Verification email
@@ -45,7 +49,9 @@ pub async fn sign_in(Json(_json): Json<SignIn>) -> Result<Tokens, ServiceError> 
         (status = 200, body = ())
     )
 )]
-pub async fn create_verification_email(Json(_json): Json<CreateVerification>) -> Result<(), ServiceError> {
+pub async fn create_verification_email(
+    Json(_json): Json<CreateVerification>,
+) -> Result<(), ServiceError> {
     Ok(())
 }
 
@@ -59,14 +65,22 @@ pub async fn create_verification_email(Json(_json): Json<CreateVerification>) ->
         (status = 200, body = ())
     )
 )]
-pub async fn check_verification_email(Json(_json): Json<CheckVerification>) -> Result<(), ServiceError> {
+pub async fn check_verification_email(
+    Json(_json): Json<CheckVerification>,
+) -> Result<(), ServiceError> {
     Ok(())
 }
 
 pub fn auth_router() -> Router {
     Router::new()
-    .route("/external/auth", post(sign_up))
-    .route("/external/auth", get(sign_in))
-    .route("/external/auth/verification", post(create_verification_email))
-    .route("/external/auth/verification/check", post(check_verification_email))
+        .route("/external/auth", post(sign_up))
+        .route("/external/auth", get(sign_in))
+        .route(
+            "/external/auth/verification",
+            post(create_verification_email),
+        )
+        .route(
+            "/external/auth/verification/check",
+            post(check_verification_email),
+        )
 }

@@ -1,6 +1,13 @@
-use axum::{routing::{patch, post}, Json, Router};
+use axum::{
+    routing::{patch, post},
+    Json, Router,
+};
 
-use crate::{adapter::http::schemas::{CreateProject, DeleteProject, ExpelMember}, domain::project::AssignRole, errors::ServiceError};
+use crate::{
+    adapter::http::schemas::{CreateProject, DeleteProject, ExpelMember},
+    domain::project::AssignRole,
+    errors::ServiceError,
+};
 
 /// Assign role
 #[axum::debug_handler]
@@ -60,8 +67,8 @@ pub async fn delete_project(Json(_json): Json<DeleteProject>) -> Result<(), Serv
 
 pub fn project_router() -> Router {
     Router::new()
-    .route("/external/project/role", post(assign_role))
-    .route("/external/project/role", patch(expel_member))
-    .route("/external/project", post(create_project))
-    .route("/external/project", patch(delete_project))
+        .route("/external/project/role", post(assign_role))
+        .route("/external/project/role", patch(expel_member))
+        .route("/external/project", post(create_project))
+        .route("/external/project", patch(delete_project))
 }

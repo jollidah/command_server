@@ -5,6 +5,12 @@ on:
         - "deploy/*"
         - "main"
 
+env:
+  DATABASE_URL: postgres://test:test123@localhost:5432/aut_cloud
+  DB_USER: test
+  DB_PASSWORD: test123
+  DB_NAME: aut_cloud
+
 jobs:
   ci-test:
     runs-on: ubuntu-latest
@@ -24,23 +30,16 @@ jobs:
         components: rustfmt, clippy
         override: true
 
-    - name: Cache cargo registry
+    - name: Cache cargo registry and build
       uses: actions/cache@v3
       with:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
+          target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
-
-    - name: Cache cargo build
-      uses: actions/cache@v3
-      with:
-        path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ runner.os }}-cargo-build-target-
 
     - name: database driver setup
       run: |
@@ -54,15 +53,15 @@ jobs:
 
     - name: create .env file
       run: |
-            cat > .env << EOF
-            DATABASE_URL=postgres://test:test123@localhost:5432/aut_cloud
-            DB_USER=test
-            DB_PASSWORD=test123
-            DB_NAME=aut_cloud
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
-            GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
-            EOF
+        cat > .env << EOF
+        DATABASE_URL=${{ env.DATABASE_URL }}
+        DB_USER=${{ env.DB_USER }}
+        DB_PASSWORD=${{ env.DB_PASSWORD }}
+        DB_NAME=${{ env.DB_NAME }}
+        JWT_SECRET=${{ secrets.JWT_SECRET }}
+        GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
+        GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
+        EOF
 
     - name: load up docker 
       run: |

@@ -5,9 +5,6 @@ on:
         - "deploy/*"
         - "main"
 
-env:
-  DATABASE_URL: postgres://test:test123@localhost:5432/aut_cloud
-
 jobs:
   ci-test:
     runs-on: ubuntu-latest
@@ -27,6 +24,24 @@ jobs:
         components: rustfmt, clippy
         override: true
 
+    - name: Cache cargo registry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Cache cargo build
+      uses: actions/cache@v3
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-build-target-
+
     - name: database driver setup
       run: |
         cargo install sqlx-cli --no-default-features --features native-tls,postgres,openssl-vendored
@@ -44,6 +59,9 @@ jobs:
             DB_USER=test
             DB_PASSWORD=test123
             DB_NAME=aut_cloud
+            JWT_SECRET=${{ secrets.JWT_SECRET }}
+            GMAIL_USERNAME=${{ secrets.GMAIL_USERNAME }}
+            GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
             EOF
 
     - name: load up docker 

@@ -3,7 +3,7 @@ use axum::{
     Json,
 };
 use reqwest::StatusCode;
-use ruva::Serialize;
+use serde::Serialize;
 use serde_json::json;
 
 use crate::errors::ServiceError;

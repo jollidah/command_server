@@ -1,7 +1,7 @@
 use std::fmt::{self, Display};
 
 use chrono::{DateTime, Utc};
-use ruva::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 

@@ -42,6 +42,3 @@ serde_json = "*"
 
 lettre = "*"
 rand = "*"
-
-# Local dependencies
-ruva = { path = "../ruva" }

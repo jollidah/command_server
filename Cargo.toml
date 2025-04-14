@@ -10,6 +10,7 @@ dotenv = { version = "*" }
 tracing = "*"
 tracing-subscriber = { version = "*", features = ["env-filter"] }
 reqwest = { version = "*", features = ["json", "rustls-tls"] }
+jsonwebtoken = { version = "*"}
 
 tower-http = { version = "^0.5", features = ["trace", "cors"] }
 axum = { version = "^0.7", features = ["macros"] }
@@ -35,5 +36,12 @@ sqlx = { version = "*", features = [
     "json",
     "rust_decimal"
 ] }
+rocksdb = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+
+lettre = "*"
+rand = "*"
+
+# Local dependencies
+ruva = { path = "../ruva" }

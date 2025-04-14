@@ -1,9 +1,12 @@
-use crate::{
-    adapter::http::schemas::{
-        CheckVerification, CreateProject, CreateVerification, DeleteProject, ExpelMember, SignIn,
-        SignUp,
+use crate::domain::{
+    auth::{
+        commands::{CheckVerification, CreateUserAccount, IssueTokens, RefreshTokens},
+        AuthenticationTokens,
     },
-    domain::project::AssignRole,
+    project::{
+        commands::{AssignRole, CreateProject, DeleteProject, ExpelMember},
+        UserRole,
+    },
 };
 
 use super::routes::{auth, project};
@@ -12,17 +15,18 @@ use utoipa::OpenApi;
 #[derive(OpenApi)]
 #[openapi(
  paths(
-    auth::sign_up,
-    auth::sign_in,
-    auth::create_verification_email,
+    auth::create_user_account,
+    auth::issue_tokens,
     auth::check_verification_email,
+    auth::refresh_tokens,
  ),
  components(
      schemas(
-         SignUp,
-         SignIn,
-         CreateVerification,
+         CreateUserAccount,
+         IssueTokens,
          CheckVerification,
+         RefreshTokens,
+         AuthenticationTokens,
       )
  ),
  tags(
@@ -45,6 +49,7 @@ pub struct AuthDoc;
          ExpelMember,
          CreateProject,
          DeleteProject,
+         UserRole,
       )
  ),
  tags(

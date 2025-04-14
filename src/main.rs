@@ -1,23 +1,32 @@
-use std::{env, net::SocketAddr};
-
-use adapter::http::{
-    routes::{auth::auth_router, project::project_router},
-    swagger_docs::{AuthDoc, ProjectDoc},
+use adapter::{
+    http::{
+        routes::{auth::auth_router, middleware::CurrentUser, project::project_router},
+        swagger_docs::{AuthDoc, ProjectDoc},
+    },
+    repositories::connection_pool,
 };
 use axum::Router;
+use std::{env, net::SocketAddr};
 use tokio::net::TcpListener;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 mod adapter;
+mod bootstrap;
+mod config;
 mod domain;
 mod errors;
+mod service;
 
 #[tokio::main]
 async fn main() {
     println!("Environment Variable Is Being Set...");
     dotenv::dotenv().ok();
+    sqlx::migrate!("./migrations")
+        .run(connection_pool())
+        .await
+        .expect("Running Migration Script Failed!");
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {

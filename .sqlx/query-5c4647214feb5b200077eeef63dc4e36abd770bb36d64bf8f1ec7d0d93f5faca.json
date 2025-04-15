@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT id, email, name, phone_num, verified, create_dt\n        FROM account_user\n        LIMIT 1\n        ",
+  "query": "SELECT * FROM account_user WHERE email = $1",
   "describe": {
     "columns": [
       {
@@ -25,19 +25,27 @@
       },
       {
         "ordinal": 4,
+        "name": "password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
         "name": "verified",
         "type_info": "Bool"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "create_dt",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
+      false,
       false,
       false,
       false,
@@ -46,5 +54,5 @@
       false
     ]
   },
-  "hash": "5c1e768448e801d2bad1efc19fad2dcf6f58cc19f356420f4c1c1a8ff3a939c7"
+  "hash": "5c4647214feb5b200077eeef63dc4e36abd770bb36d64bf8f1ec7d0d93f5faca"
 }

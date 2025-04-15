@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE account_user\n            SET\n                email = $1,\n                phone_num = $2,\n                password = $3,\n                verified = $4\n        WHERE id = $5",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "38981bfe668a8ca0413bf3e62196f952f4d5864b7c59948dd2931c93db935ca3"
+}

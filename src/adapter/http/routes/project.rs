@@ -1,13 +1,21 @@
 use axum::{
-    routing::{patch, post},
-    Json, Router,
+    extract::Path,
+    routing::{delete, post, put},
+    Extension, Json, Router,
 };
+use uuid::Uuid;
 
 use crate::{
-    adapter::http::schemas::{CreateProject, DeleteProject, ExpelMember},
-    domain::project::AssignRole,
+    adapter::http::conversion::WebResponse,
+    domain::project::commands::{AssignRole, CreateProject, DeleteProject, ExpelMember},
     errors::ServiceError,
+    service::project::{
+        handle_assign_role, handle_create_project, handle_delete_project, handle_expel_member,
+    },
+    CurrentUser,
 };
+
+use super::middleware::auth_middleware;
 
 /// Assign role
 #[axum::debug_handler]
@@ -19,21 +27,35 @@ use crate::{
         (status = 200, body = ())
     )
 )]
-pub async fn assign_role(Json(_json): Json<AssignRole>) -> Result<(), ServiceError> {
+pub async fn assign_role(
+    Extension(current_user): Extension<CurrentUser>,
+    Json(cmd): Json<AssignRole>,
+) -> Result<(), ServiceError> {
+    handle_assign_role(cmd, current_user).await?;
     Ok(())
 }
 
 /// Expel member
 #[axum::debug_handler]
 #[utoipa::path(
-    patch,
-    path = "/external/project/role",
-    request_body(content = ExpelMember, content_type = "application/json"),
+    delete,
+    path = "/external/project/{project_id}/member/{email}",
     responses(
         (status = 200, body = ())
     )
 )]
-pub async fn expel_member(Json(_json): Json<ExpelMember>) -> Result<(), ServiceError> {
+pub async fn expel_member(
+    Extension(current_user): Extension<CurrentUser>,
+    Path((project_id, email)): Path<(Uuid, String)>,
+) -> Result<(), ServiceError> {
+    handle_expel_member(
+        ExpelMember {
+            project_id,
+            expelled_email: email,
+        },
+        current_user,
+    )
+    .await?;
     Ok(())
 }
 
@@ -44,31 +66,39 @@ pub async fn expel_member(Json(_json): Json<ExpelMember>) -> Result<(), ServiceE
     path = "/external/project",
     request_body(content = CreateProject, content_type = "application/json"),
     responses(
-        (status = 200, body = ())
+        (status = 200, body = Uuid)
     )
 )]
-pub async fn create_project(Json(_json): Json<CreateProject>) -> Result<(), ServiceError> {
-    Ok(())
+pub async fn create_project(
+    Extension(current_user): Extension<CurrentUser>,
+    Json(cmd): Json<CreateProject>,
+) -> Result<WebResponse<Uuid>, ServiceError> {
+    let project_id = handle_create_project(cmd, current_user).await.unwrap();
+    Ok(WebResponse(project_id))
 }
 
 /// Delete project
 #[axum::debug_handler]
 #[utoipa::path(
-    patch,
-    path = "/external/project",
-    request_body(content = DeleteProject, content_type = "application/json"),
+    delete,
+    path = "/external/project/{project_id}",
     responses(
         (status = 200, body = ())
     )
 )]
-pub async fn delete_project(Json(_json): Json<DeleteProject>) -> Result<(), ServiceError> {
+pub async fn delete_project(Path(project_id): Path<Uuid>) -> Result<(), ServiceError> {
+    handle_delete_project(DeleteProject { project_id }).await?;
     Ok(())
 }
 
 pub fn project_router() -> Router {
     Router::new()
-        .route("/external/project/role", post(assign_role))
-        .route("/external/project/role", patch(expel_member))
+        .route("/external/project/role", put(assign_role))
+        .route(
+            "/external/project/:project_id/member/:email",
+            delete(expel_member),
+        )
         .route("/external/project", post(create_project))
-        .route("/external/project", patch(delete_project))
+        .route("/external/project/:project_id", delete(delete_project))
+        .route_layer(axum::middleware::from_fn(auth_middleware))
 }

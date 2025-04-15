@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS account_user(
     email VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
     phone_num VARCHAR(255) NOT NULL,
-    verified boolean NOT NULL DEFAULT 'false',
+    password VARCHAR(255) NOT NULL,
+    verified BOOLEAN NOT NULL DEFAULT FALSE,
     create_dt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE(email)
 );
@@ -22,10 +23,8 @@ CREATE TABLE IF NOT EXISTS project(
 
 CREATE TABLE IF NOT EXISTS user_role(
     project_id UUID NOT NULL,
-    user_id UUID NOT NULL,
+    user_email VARCHAR(255) NOT NULL,
     role role NOT NULL,
     update_dt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT project_id FOREIGN KEY(project_id) REFERENCES "project" (id) ON DELETE CASCADE,
-    CONSTRAINT user_id FOREIGN KEY(user_id) REFERENCES "account_user" (id) ON DELETE CASCADE,
-    CONSTRAINT user_role_pkey PRIMARY KEY (project_id, user_id)
+    CONSTRAINT user_role_pkey PRIMARY KEY (project_id, user_email)
 );

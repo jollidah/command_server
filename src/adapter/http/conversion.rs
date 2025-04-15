@@ -3,11 +3,10 @@ use axum::{
     Json,
 };
 use reqwest::StatusCode;
+use serde::Serialize;
 use serde_json::json;
 
 use crate::errors::ServiceError;
-
-use super::schemas::{CheckVerification, CreateVerification, SignIn, SignUp, Tokens};
 
 impl IntoResponse for ServiceError {
     fn into_response(self) -> Response {
@@ -15,35 +14,51 @@ impl IntoResponse for ServiceError {
             Self::_InternalServerError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error").into_response()
             }
+            Self::DatabaseConnectionError(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
+            }
+            Self::RowNotFound => (StatusCode::NOT_FOUND, "Row not found").into_response(),
+            Self::KVStoreError(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
+            }
+            Self::ParsingError(err) => {
+                (StatusCode::BAD_REQUEST, format!("{:?}", err)).into_response()
+            }
+            Self::EmailError(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
+            }
+            Self::InvalidVerificationCode => {
+                (StatusCode::BAD_REQUEST, "Invalid verification code").into_response()
+            }
+            Self::VerificationCodeExpired => {
+                (StatusCode::GONE, "Verification code expired").into_response()
+            }
+            Self::InvalidJwtToken => {
+                (StatusCode::UNAUTHORIZED, "Invalid JWT token").into_response()
+            }
+            Self::JwtTokenExpired => {
+                (StatusCode::UNAUTHORIZED, "JWT token expired").into_response()
+            }
+            Self::JwtTokenError(err) => (
+                StatusCode::UNAUTHORIZED,
+                format!("JWT token error: {}", err),
+            )
+                .into_response(),
+            Self::UserNotVerified => {
+                (StatusCode::UNAUTHORIZED, "User not verified").into_response()
+            }
+            Self::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized").into_response(),
         }
     }
 }
 
-impl IntoResponse for SignUp {
-    fn into_response(self) -> Response {
-        Json(json!(self)).into_response()
-    }
-}
+#[derive(Serialize)]
+pub(crate) struct WebResponse<T: Serialize>(pub(crate) T);
 
-impl IntoResponse for SignIn {
-    fn into_response(self) -> Response {
-        Json(json!(self)).into_response()
-    }
-}
-
-impl IntoResponse for Tokens {
-    fn into_response(self) -> Response {
-        Json(json!(self)).into_response()
-    }
-}
-
-impl IntoResponse for CreateVerification {
-    fn into_response(self) -> Response {
-        Json(json!(self)).into_response()
-    }
-}
-
-impl IntoResponse for CheckVerification {
+impl<T> IntoResponse for WebResponse<T>
+where
+    T: Serialize,
+{
     fn into_response(self) -> Response {
         Json(json!(self)).into_response()
     }

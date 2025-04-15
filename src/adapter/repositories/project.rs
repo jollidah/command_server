@@ -210,8 +210,14 @@ mod tests {
         assert_eq!(fetched_project.id, project.id);
         assert_eq!(fetched_project.name, project.name);
         assert_eq!(fetched_project.description, project.description);
-        assert_eq!(fetched_project.create_dt.timestamp_millis(), project.create_dt.timestamp_millis());
-        assert_eq!(fetched_project.update_dt.timestamp_millis(), project.update_dt.timestamp_millis());
+        assert_eq!(
+            fetched_project.create_dt.timestamp_millis(),
+            project.create_dt.timestamp_millis()
+        );
+        assert_eq!(
+            fetched_project.update_dt.timestamp_millis(),
+            project.update_dt.timestamp_millis()
+        );
         assert_eq!(fetched_project.version, project.version);
     }
 

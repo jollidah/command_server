@@ -210,8 +210,8 @@ mod tests {
         assert_eq!(fetched_project.id, project.id);
         assert_eq!(fetched_project.name, project.name);
         assert_eq!(fetched_project.description, project.description);
-        assert_eq!(fetched_project.create_dt, project.create_dt);
-        assert_eq!(fetched_project.update_dt, project.update_dt);
+        assert_eq!(fetched_project.create_dt.timestamp_millis(), project.create_dt.timestamp_millis());
+        assert_eq!(fetched_project.update_dt.timestamp_millis(), project.update_dt.timestamp_millis());
         assert_eq!(fetched_project.version, project.version);
     }
 
@@ -297,7 +297,10 @@ mod tests {
         assert_eq!(fetched_user_role.project_id, user_role.project_id);
         assert_eq!(fetched_user_role.user_email, user_role.user_email);
         assert_eq!(fetched_user_role.role, user_role.role);
-        assert_eq!(fetched_user_role.update_dt, user_role.update_dt);
+        assert_eq!(
+            fetched_user_role.update_dt.timestamp_millis(),
+            user_role.update_dt.timestamp_millis()
+        );
 
         // Change Data
         user_role.role = UserRole::Editor;
@@ -329,7 +332,10 @@ mod tests {
         assert_eq!(fetched_user_role.project_id, user_role.project_id);
         assert_eq!(fetched_user_role.user_email, user_role.user_email);
         assert_eq!(fetched_user_role.role, user_role.role);
-        assert_eq!(fetched_user_role.update_dt, user_role.update_dt);
+        assert_eq!(
+            fetched_user_role.update_dt.timestamp_millis(),
+            user_role.update_dt.timestamp_millis()
+        );
     }
 
     #[tokio::test]

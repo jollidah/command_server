@@ -245,7 +245,7 @@ mod tests {
 
         let user_account = UserAccountAggregate {
             id: Uuid::new_v4(),
-            email: "test@test.com".to_string(),
+            email: format!("test{}@test.com", Uuid::new_v4()),
             name: "Test User".to_string(),
             phone_num: "1234567890".to_string(),
             password: format!("password{}", Uuid::new_v4()),
@@ -351,7 +351,7 @@ mod tests {
 
         let user_account = UserAccountAggregate {
             id: Uuid::new_v4(),
-            email: "test@test.com".to_string(),
+            email: format!("test{}@test.com", Uuid::new_v4()),
             name: "Test User".to_string(),
             phone_num: "1234567890".to_string(),
             password: format!("password{}", Uuid::new_v4()),

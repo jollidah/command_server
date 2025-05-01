@@ -8,6 +8,7 @@ pub struct Config {
     pub gmail_username: String,
     pub gmail_app_password: String,
     pub jwt_secret: String,
+    pub vultr_api_key: String,
 }
 
 impl Config {
@@ -25,6 +26,7 @@ impl Config {
             gmail_app_password: std::env::var("GMAIL_APP_PASSWORD").unwrap(),
             jwt_secret: std::env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
+            vultr_api_key: std::env::var("VULTR_API_KEY").unwrap(),
         })
     }
 }

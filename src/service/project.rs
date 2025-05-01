@@ -98,6 +98,7 @@ mod tests {
         domain::auth::{commands::CreateUserAccount, UserAccountAggregate},
         service::auth::tests::create_user_account_helper,
     };
+
     pub async fn create_project_helper() -> (UserAccountAggregate, ProjectAggregate, CurrentUser) {
         let user_account = create_user_account_helper().await;
         let create_project_cmd = CreateProject {

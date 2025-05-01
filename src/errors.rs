@@ -15,4 +15,6 @@ pub enum ServiceError {
     JwtTokenExpired,
     UserNotVerified,
     Unauthorized,
+    RequestError(Box<dyn Debug>),
+    ParseError,
 }

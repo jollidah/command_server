@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::errors::ServiceError;
 
 pub mod commands;
+
 #[allow(unused)]
 pub struct ProjectAggregate {
     pub(crate) id: Uuid,

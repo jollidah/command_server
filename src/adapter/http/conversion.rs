@@ -48,6 +48,10 @@ impl IntoResponse for ServiceError {
                 (StatusCode::UNAUTHORIZED, "User not verified").into_response()
             }
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized").into_response(),
+            Self::RequestError(err) => {
+                (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
+            }
+            Self::ParseError => (StatusCode::BAD_REQUEST, "Parse error").into_response(),
         }
     }
 }

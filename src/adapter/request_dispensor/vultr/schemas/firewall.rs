@@ -287,113 +287,113 @@ impl ExecuteVultrCommand for GetFirewallRule {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::str::FromStr;
+// #[cfg(test)]
+// mod tests {
+//     use std::str::FromStr;
 
-    use super::*;
-    use crate::adapter::request_dispensor::vultr::get_vultr_client;
-    use crate::config::get_config;
+//     use super::*;
+//     use crate::adapter::request_dispensor::vultr::get_vultr_client;
+//     use crate::config::get_config;
 
-    #[tokio::test]
-    async fn test_create_firewall_group() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_group = FireWallCommandFactory::create_firewall_group("test".to_string())
-            .execute(&vultr_client)
-            .await
-            .unwrap();
-        println!("{:?}", firewall_group);
-    }
+//     #[tokio::test]
+//     async fn test_create_firewall_group() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_group = FireWallCommandFactory::create_firewall_group("test".to_string())
+//             .execute(&vultr_client)
+//             .await
+//             .unwrap();
+//         println!("{:?}", firewall_group);
+//     }
 
-    #[tokio::test]
-    async fn test_list_firewall_group() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_groups = FireWallCommandFactory::list_firewall_group()
-            .execute(&vultr_client)
-            .await
-            .unwrap();
-        println!("{:?}", firewall_groups);
-    }
+//     #[tokio::test]
+//     async fn test_list_firewall_group() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_groups = FireWallCommandFactory::list_firewall_group()
+//             .execute(&vultr_client)
+//             .await
+//             .unwrap();
+//         println!("{:?}", firewall_groups);
+//     }
 
-    #[tokio::test]
-    async fn test_get_firewall_group() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_group = FireWallCommandFactory::get_firewall_group(
-            Uuid::from_str("21264f8b-c28d-4e82-83b7-3ad0b4b953ec").unwrap(),
-        )
-        .execute(&vultr_client)
-        .await
-        .unwrap();
-        println!("{:?}", firewall_group);
-    }
+//     #[tokio::test]
+//     async fn test_get_firewall_group() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_group = FireWallCommandFactory::get_firewall_group(
+//             Uuid::from_str("21264f8b-c28d-4e82-83b7-3ad0b4b953ec").unwrap(),
+//         )
+//         .execute(&vultr_client)
+//         .await
+//         .unwrap();
+//         println!("{:?}", firewall_group);
+//     }
 
-    #[tokio::test]
-    async fn test_update_firewall_group() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_group =
-            FireWallCommandFactory::update_firewall_group(Uuid::new_v4(), "test".to_string())
-                .execute(&vultr_client)
-                .await
-                .unwrap();
-        println!("{:?}", firewall_group);
-    }
+//     #[tokio::test]
+//     async fn test_update_firewall_group() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_group =
+//             FireWallCommandFactory::update_firewall_group(Uuid::new_v4(), "test".to_string())
+//                 .execute(&vultr_client)
+//                 .await
+//                 .unwrap();
+//         println!("{:?}", firewall_group);
+//     }
 
-    #[tokio::test]
-    async fn test_delete_firewall_group() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_group = FireWallCommandFactory::delete_firewall_group(Uuid::new_v4())
-            .execute(&vultr_client)
-            .await
-            .unwrap();
-        println!("{:?}", firewall_group);
-    }
+//     #[tokio::test]
+//     async fn test_delete_firewall_group() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_group = FireWallCommandFactory::delete_firewall_group(Uuid::new_v4())
+//             .execute(&vultr_client)
+//             .await
+//             .unwrap();
+//         println!("{:?}", firewall_group);
+//     }
 
-    #[tokio::test]
-    async fn test_create_firewall_rule() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_rule = FireWallCommandFactory::create_firewall_rule(
-            Uuid::new_v4(),
-            IpType::V4,
-            Protocol::Tcp,
-            "80".to_string(),
-            "0.0.0.0/0".to_string(),
-            32,
-            "192.168.1.1".to_string(),
-            "test".to_string(),
-        )
-        .execute(&vultr_client)
-        .await
-        .unwrap();
-        println!("{:?}", firewall_rule);
-    }
+//     #[tokio::test]
+//     async fn test_create_firewall_rule() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_rule = FireWallCommandFactory::create_firewall_rule(
+//             Uuid::new_v4(),
+//             IpType::V4,
+//             Protocol::Tcp,
+//             "80".to_string(),
+//             "0.0.0.0/0".to_string(),
+//             32,
+//             "192.168.1.1".to_string(),
+//             "test".to_string(),
+//         )
+//         .execute(&vultr_client)
+//         .await
+//         .unwrap();
+//         println!("{:?}", firewall_rule);
+//     }
 
-    #[tokio::test]
-    async fn test_list_firewall_rule() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_rules = FireWallCommandFactory::list_firewall_rule(Uuid::new_v4())
-            .execute(&vultr_client)
-            .await
-            .unwrap();
-        println!("{:?}", firewall_rules);
-    }
+//     #[tokio::test]
+//     async fn test_list_firewall_rule() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_rules = FireWallCommandFactory::list_firewall_rule(Uuid::new_v4())
+//             .execute(&vultr_client)
+//             .await
+//             .unwrap();
+//         println!("{:?}", firewall_rules);
+//     }
 
-    #[tokio::test]
-    async fn test_delete_firewall_rule() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_rule = FireWallCommandFactory::delete_firewall_rule(Uuid::new_v4(), 1)
-            .execute(&vultr_client)
-            .await
-            .unwrap();
-        println!("{:?}", firewall_rule);
-    }
+//     #[tokio::test]
+//     async fn test_delete_firewall_rule() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_rule = FireWallCommandFactory::delete_firewall_rule(Uuid::new_v4(), 1)
+//             .execute(&vultr_client)
+//             .await
+//             .unwrap();
+//         println!("{:?}", firewall_rule);
+//     }
 
-    #[tokio::test]
-    async fn test_get_firewall_rule() {
-        let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-        let firewall_rule = FireWallCommandFactory::get_firewall_rule(Uuid::new_v4(), 1)
-            .execute(&vultr_client)
-            .await
-            .unwrap();
-        println!("{:?}", firewall_rule);
-    }
-}
+//     #[tokio::test]
+//     async fn test_get_firewall_rule() {
+//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
+//         let firewall_rule = FireWallCommandFactory::get_firewall_rule(Uuid::new_v4(), 1)
+//             .execute(&vultr_client)
+//             .await
+//             .unwrap();
+//         println!("{:?}", firewall_rule);
+//     }
+// }

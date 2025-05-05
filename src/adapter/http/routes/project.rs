@@ -7,10 +7,13 @@ use uuid::Uuid;
 
 use crate::{
     adapter::http::conversion::WebResponse,
-    domain::project::commands::{AssignRole, CreateProject, DeleteProject, ExpelMember},
+    domain::project::commands::{
+        AssignRole, CreateProject, DeleteProject, ExpelMember, RegisterVultApiKey,
+    },
     errors::ServiceError,
     service::project::{
         handle_assign_role, handle_create_project, handle_delete_project, handle_expel_member,
+        handle_register_vult_api_key,
     },
     CurrentUser,
 };
@@ -91,6 +94,24 @@ pub async fn delete_project(Path(project_id): Path<Uuid>) -> Result<(), ServiceE
     Ok(())
 }
 
+/// Register (updsert) vult api key for admin
+#[axum::debug_handler]
+#[utoipa::path(
+    put,
+    path = "/external/auth/vult-api-key",
+    request_body(content = RegisterVultApiKey, content_type = "application/json"),
+    responses(
+        (status = 200, body = ())
+    )
+)]
+pub async fn register_vult_api_key(
+    Extension(current_user): Extension<CurrentUser>,
+    Json(cmd): Json<RegisterVultApiKey>,
+) -> Result<(), ServiceError> {
+    handle_register_vult_api_key(cmd, current_user).await?;
+    Ok(())
+}
+
 pub fn project_router() -> Router {
     Router::new()
         .route("/external/project/role", put(assign_role))
@@ -100,5 +121,6 @@ pub fn project_router() -> Router {
         )
         .route("/external/project", post(create_project))
         .route("/external/project/:project_id", delete(delete_project))
+        .route("/external/auth/vult-api-key", put(register_vult_api_key))
         .route_layer(axum::middleware::from_fn(auth_middleware))
 }

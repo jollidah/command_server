@@ -1,7 +1,11 @@
 use chrono::Utc;
+use openssl::error::ErrorStack;
 use uuid::Uuid;
 
-use crate::domain::auth::{commands::CreateUserAccount, UserAccountAggregate};
+use crate::{
+    domain::auth::{commands::CreateUserAccount, UserAccountAggregate},
+    errors::ServiceError,
+};
 
 impl From<CreateUserAccount> for UserAccountAggregate {
     fn from(command: CreateUserAccount) -> Self {
@@ -14,5 +18,12 @@ impl From<CreateUserAccount> for UserAccountAggregate {
             verified: false,
             create_dt: Utc::now(),
         }
+    }
+}
+
+impl From<ErrorStack> for ServiceError {
+    fn from(error: ErrorStack) -> Self {
+        tracing::error!("ErrorStack: {:?}", error);
+        ServiceError::PemKeyError(error.to_string())
     }
 }

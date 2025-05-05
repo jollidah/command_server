@@ -74,3 +74,19 @@ impl Display for UserRole {
         }
     }
 }
+
+pub struct VultApiKeyEntity {
+    pub(crate) project_id: Uuid,
+    pub(crate) api_key: String,
+    pub(crate) update_dt: DateTime<Utc>,
+}
+
+impl VultApiKeyEntity {
+    pub fn new(project_id: Uuid, api_key: String) -> Self {
+        Self {
+            project_id,
+            api_key,
+            update_dt: Utc::now(),
+        }
+    }
+}

@@ -52,6 +52,11 @@ impl IntoResponse for ServiceError {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
             }
             Self::ParseError => (StatusCode::BAD_REQUEST, "Parse error").into_response(),
+            Self::PemKeyError(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Error while handling pem key: {}", err),
+            )
+                .into_response(),
         }
     }
 }

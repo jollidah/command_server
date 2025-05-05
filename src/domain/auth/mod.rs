@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod conversion;
 pub mod jwt;
+pub mod private_key;
 
 use chrono::{DateTime, Duration, Utc};
 use rand::Rng;
@@ -73,4 +74,9 @@ impl AuthenticationTokens {
             refresh_token,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct VultrAPIKey {
+    pub(crate) api_key: String,
 }

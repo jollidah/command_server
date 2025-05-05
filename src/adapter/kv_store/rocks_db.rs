@@ -2,9 +2,13 @@ use rocksdb::DB;
 use std::sync::{Arc, LazyLock};
 use tokio::sync::Mutex;
 
-use crate::{config::get_config, errors::ServiceError};
+use crate::{
+    config::get_config,
+    domain::auth::private_key::{PublicKey, VultrKeyPair},
+    errors::ServiceError,
+};
 
-use super::interfaces::KVStore;
+use super::interfaces::{KVStore, VultrKeyPairStore};
 
 pub(crate) struct RocksDB {
     pub(crate) db: Mutex<DB>,
@@ -54,6 +58,25 @@ impl KVStore for RocksDB {
         let db = self.db.lock().await;
         db.delete(key)
             .map_err(|err| ServiceError::KVStoreError(Box::new(err)))
+    }
+}
+
+impl VultrKeyPairStore for RocksDB {
+    async fn get_or_create_public_key(&self) -> Result<PublicKey, ServiceError> {
+        match self.get(Self::PUBLIC_KEY_NAME).await {
+            Ok(value) => Ok(PublicKey::from_pem(&value)?),
+            Err(_) => {
+                let (public_key, private_key) = VultrKeyPair::generate_key_pair()?;
+                self.insert(Self::PUBLIC_KEY_NAME, &public_key.key.public_key_to_pem()?)
+                    .await?;
+                self.insert(
+                    Self::PRIVATE_KEY_NAME,
+                    &private_key.key.private_key_to_pem()?,
+                )
+                .await?;
+                Ok(public_key)
+            }
+        }
     }
 }
 
@@ -164,4 +187,23 @@ mod tests {
             ServiceError::KVStoreError(_)
         ));
     }
+}
+
+#[tokio::test]
+async fn test_get_or_create_public_key() {
+    // GIVEN
+    let rocks_db = get_rocks_db().await;
+    rocks_db.delete(RocksDB::PRIVATE_KEY_NAME).await.unwrap();
+    rocks_db.delete(RocksDB::PUBLIC_KEY_NAME).await.unwrap();
+
+    assert!(rocks_db.get(RocksDB::PRIVATE_KEY_NAME).await.is_err());
+    assert!(rocks_db.get(RocksDB::PUBLIC_KEY_NAME).await.is_err());
+
+    let public_key = rocks_db.get_or_create_public_key().await.unwrap();
+
+    // THEN
+    assert_eq!(
+        public_key.key.public_key_to_pem().unwrap(),
+        rocks_db.get(RocksDB::PUBLIC_KEY_NAME).await.unwrap()
+    );
 }

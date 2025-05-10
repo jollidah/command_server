@@ -141,7 +141,7 @@ pub async fn upsert_vult_api_key(
     .map_err(Into::<ServiceError>::into)?;
     Ok(())
 }
-
+#[allow(unused)]
 pub async fn get_vult_api_key(
     project_id: Uuid,
     conn: &'static sqlx::PgPool,
@@ -299,9 +299,18 @@ mod tests {
         ext.write().await.close().await;
 
         // THEN
-        assert!(matches!(get_project(project.id, connection_pool()).await, Err(ServiceError::RowNotFound)));
-        assert!(matches!(get_user_role(project.id, &user_role.user_email, connection_pool()).await, Err(ServiceError::RowNotFound)));
-        assert!(matches!(get_vult_api_key(project.id, connection_pool()).await, Err(ServiceError::RowNotFound)));
+        assert!(matches!(
+            get_project(project.id, connection_pool()).await,
+            Err(ServiceError::RowNotFound)
+        ));
+        assert!(matches!(
+            get_user_role(project.id, &user_role.user_email, connection_pool()).await,
+            Err(ServiceError::RowNotFound)
+        ));
+        assert!(matches!(
+            get_vult_api_key(project.id, connection_pool()).await,
+            Err(ServiceError::RowNotFound)
+        ));
     }
 
     #[tokio::test]
@@ -521,31 +530,5 @@ mod tests {
             .unwrap();
         assert_eq!(fetched_vult_api_key.project_id, vult_api_key.project_id);
         assert_eq!(fetched_vult_api_key.api_key, vult_api_key.api_key);
-    }
-
-    #[tokio::test]
-    async fn test_register_vult_api_key_by_non_admin() {
-        // GIVEN
-        tear_down().await;
-        let (_, project, mut user_role) = create_project_helper().await;
-        user_role.role = UserRole::Viewer; // Set role to non-admin
-
-        let vult_api_key = VultApiKeyEntity {
-            project_id: project.id,
-            api_key: "test_vultr_api_key".to_string(),
-            update_dt: Utc::now(),
-        };
-
-        let ext = SqlExecutor::new();
-        ext.write().await.begin().await.unwrap();
-
-        // WHEN
-        let result = upsert_vult_api_key(&vult_api_key, ext.write().await.transaction()).await;
-
-        // THEN
-        assert!(matches!(result, Err(ServiceError::Unauthorized)));
-
-        ext.write().await.commit().await.unwrap();
-        ext.write().await.close().await;
     }
 }

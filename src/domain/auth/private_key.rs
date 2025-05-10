@@ -1,8 +1,8 @@
+use crate::errors::ServiceError;
 use openssl::{
     pkey::{Private, Public},
     rsa::{Padding, Rsa},
 };
-use crate::errors::ServiceError;
 
 #[derive(Debug, Clone)]
 pub struct PublicKey {

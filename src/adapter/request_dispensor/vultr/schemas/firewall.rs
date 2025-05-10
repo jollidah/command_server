@@ -52,6 +52,7 @@ impl FireWallCommandFactory {
     pub fn delete_firewall_group(id: Uuid) -> DeleteFirewallGroup {
         DeleteFirewallGroup { id }
     }
+    #[allow(clippy::too_many_arguments)]
     pub fn create_firewall_rule(
         fire_wall_group_id: Uuid,
         ip_type: IpType,

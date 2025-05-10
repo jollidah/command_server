@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO vult_api_key (project_id, api_key, update_dt) VALUES ($1, $2, $3)\n        ON CONFLICT (project_id)\n        DO UPDATE SET api_key = $2, update_dt = $3\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "36ec89260333c3a904de2618c5ac5fbc855c907b0cc9fff02f9b0bb3415716a9"
+}

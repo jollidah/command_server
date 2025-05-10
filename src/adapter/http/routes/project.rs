@@ -1,19 +1,24 @@
+use std::time::Duration;
+
 use axum::{
     extract::Path,
-    routing::{delete, post, put},
+    routing::{delete, get, post, put},
     Extension, Json, Router,
 };
 use uuid::Uuid;
 
 use crate::{
-    adapter::http::conversion::WebResponse,
+    adapter::{
+        http::conversion::WebResponse,
+        kv_store::{interfaces::SessionStore, rocks_db::get_rocks_db},
+    },
     domain::project::commands::{
         AssignRole, CreateProject, DeleteProject, ExpelMember, RegisterVultApiKey,
     },
     errors::ServiceError,
     service::project::{
         handle_assign_role, handle_create_project, handle_delete_project, handle_expel_member,
-        handle_register_vult_api_key,
+        handle_register_vult_api_key, handle_session_sse,
     },
     CurrentUser,
 };
@@ -98,7 +103,7 @@ pub async fn delete_project(Path(project_id): Path<Uuid>) -> Result<(), ServiceE
 #[axum::debug_handler]
 #[utoipa::path(
     put,
-    path = "/external/auth/vult-api-key",
+    path = "/external/project/vult-api-key",
     request_body(content = RegisterVultApiKey, content_type = "application/json"),
     responses(
         (status = 200, body = ())
@@ -112,15 +117,57 @@ pub async fn register_vult_api_key(
     Ok(())
 }
 
+use axum::response::sse::{Event, KeepAlive, Sse};
+use futures_util::stream::Stream;
+use std::convert::Infallible;
+/// Start session
+#[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = "/external/project/{project_id}/session",
+    request_body(content = (), content_type = "application/json"),
+    responses(
+        (status = 200, body = ())
+    )
+)]
+async fn session_sse(
+    Extension(current_user): Extension<CurrentUser>,
+    Path(project_id): Path<Uuid>,
+) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
+    let rocks_db = get_rocks_db().await;
+
+    // Session 정보(project_id, user_id) 추가
+    rocks_db
+        .add_user_to_session(project_id, current_user.user_id)
+        .await
+        .unwrap();
+    let user_id = current_user.user_id;
+    let stream = async_stream::try_stream! {
+        let message = handle_session_sse(&current_user, project_id).await.unwrap();
+        yield Event::default().json_data(message).unwrap();
+        tokio::time::sleep(Duration::from_secs(1)).await;
+    };
+
+    // Session 정보(project_id, user_id) 제거
+    let rocks_db = get_rocks_db().await;
+    rocks_db
+        .remove_user_from_session(project_id, user_id)
+        .await
+        .unwrap();
+
+    Sse::new(stream).keep_alive(KeepAlive::default())
+}
+
 pub fn project_router() -> Router {
     Router::new()
         .route("/external/project/role", put(assign_role))
         .route(
-            "/external/project/:project_id/member/:email",
+            "/external/project/{project_id}/member/{email}",
             delete(expel_member),
         )
         .route("/external/project", post(create_project))
-        .route("/external/project/:project_id", delete(delete_project))
-        .route("/external/auth/vult-api-key", put(register_vult_api_key))
+        .route("/external/project/{project_id}", delete(delete_project))
+        .route("/external/project/vult-api-key", put(register_vult_api_key))
+        .route("/external/project/{project_id}/session", get(session_sse))
         .route_layer(axum::middleware::from_fn(auth_middleware))
 }

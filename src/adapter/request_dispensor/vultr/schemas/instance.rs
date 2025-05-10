@@ -69,6 +69,7 @@ impl InstanceCommandFactory {
     pub fn get_instance(id: Uuid) -> GetInstance {
         GetInstance { id }
     }
+    #[allow(clippy::too_many_arguments)]
     pub fn update_instance(
         id: Uuid,
         backups: BackupStatus,

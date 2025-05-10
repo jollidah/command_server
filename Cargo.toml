@@ -13,14 +13,14 @@ reqwest = { version = "*", features = ["json", "rustls-tls"] }
 jsonwebtoken = { version = "*"}
 
 tower-http = { version = "^0.5", features = ["trace", "cors"] }
-axum = { version = "^0.7", features = ["macros"] }
-utoipa = { version = "4", features = [
+axum = { version = "0.8.4", features = ["macros"] }
+utoipa = { version = "*", features = [
     "axum_extras",
     "uuid",
     "chrono",
     "decimal",
 ] }
-utoipa-swagger-ui = { version = "5", features = ["axum", "debug-embed"] }
+utoipa-swagger-ui = { version = "*", features = ["axum", "debug-embed"] }
 tokio = { version = "*", features = ["full"] }
 
 # Datatype
@@ -43,3 +43,6 @@ serde_json = "*"
 lettre = "*"
 rand = "*"
 rsa = "*"
+futures-util = "0.3.31"
+tokio-stream = "0.1.17"
+async-stream = "*"

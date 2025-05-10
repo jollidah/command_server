@@ -15,6 +15,7 @@ use crate::domain::project::{commands::CreateProject, ProjectAggregate};
 use crate::domain::project::{UserRole, UserRoleEntity, VultApiKeyEntity};
 use crate::errors::ServiceError;
 use crate::CurrentUser;
+use serde_json::{json, Value};
 use uuid::Uuid;
 
 pub async fn handle_create_project(
@@ -118,12 +119,26 @@ pub async fn handle_register_vult_api_key(
     Ok(())
 }
 
+pub async fn handle_session_sse(
+    current_user: &CurrentUser,
+    project_id: Uuid,
+) -> Result<Value, ServiceError> {
+    let user_role = get_user_role(project_id, &current_user.email, connection_pool()).await?;
+    user_role.verify_admin()?;
+
+    let test_struct_json = json!({
+        "message": "hi!"
+    });
+    Ok(test_struct_json)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
         adapter::repositories::{
-            auth::get_user_account_by_email, connection_pool, project::{get_project, get_user_role, get_vult_api_key}
+            connection_pool,
+            project::{get_project, get_user_role, get_vult_api_key},
         },
         domain::auth::{
             commands::CreateUserAccount,
@@ -141,6 +156,7 @@ mod tests {
         };
         let current_user = CurrentUser {
             email: user_account.email.clone(),
+            user_id: Uuid::new_v4(),
         };
         let project_id = handle_create_project(create_project_cmd.clone(), current_user.clone())
             .await
@@ -166,6 +182,7 @@ mod tests {
         // WHEN
         let current_user = CurrentUser {
             email: create_user_cmd.email.clone(),
+            user_id: Uuid::new_v4(),
         };
         let project_id = handle_create_project(create_project_cmd, current_user.clone())
             .await
@@ -262,6 +279,7 @@ mod tests {
         };
         let current_user = CurrentUser {
             email: non_admin_user_account.email.clone(),
+            user_id: non_admin_user_account.id,
         };
 
         // THEN
@@ -287,6 +305,7 @@ mod tests {
         // WHEN
         let non_admin_user = CurrentUser {
             email: non_admin_user_account.email.clone(),
+            user_id: non_admin_user_account.id,
         };
         let expel_member_cmd = ExpelMember {
             project_id: project.id,
@@ -340,7 +359,7 @@ mod tests {
         rocks_db.delete(RocksDB::PRIVATE_KEY_NAME).await.unwrap();
         rocks_db.delete(RocksDB::PUBLIC_KEY_NAME).await.unwrap();
 
-        let (_, project, mut current_user) = create_project_helper().await;
+        let (_, project, current_user) = create_project_helper().await;
         let public_key = handle_get_public_key().await.unwrap();
         let test_api_key = "test api_key";
 
@@ -354,18 +373,23 @@ mod tests {
             api_key: encoded_api_key,
         };
 
-        let mut user_role = get_user_role(project.id, &current_user.email, connection_pool()).await.unwrap();
+        let mut user_role = get_user_role(project.id, &current_user.email, connection_pool())
+            .await
+            .unwrap();
         user_role.role = UserRole::Viewer;
 
         let ext = SqlExecutor::new();
         ext.write().await.begin().await.unwrap();
-        upsert_user_role(&user_role, ext.write().await.transaction()).await.unwrap();
+        upsert_user_role(&user_role, ext.write().await.transaction())
+            .await
+            .unwrap();
 
         ext.write().await.commit().await.unwrap();
         ext.write().await.close().await;
 
         // WHEN
-        let result = handle_register_vult_api_key(register_vult_api_key_cmd, current_user.clone()).await;
+        let result =
+            handle_register_vult_api_key(register_vult_api_key_cmd, current_user.clone()).await;
 
         // THEN
         assert!(matches!(result, Err(ServiceError::Unauthorized)));

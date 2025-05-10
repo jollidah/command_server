@@ -102,17 +102,16 @@ pub async fn handle_get_public_key() -> Result<String, ServiceError> {
     let rocks_db = get_rocks_db().await;
     let public_key = rocks_db.get_or_create_public_key().await?;
 
-    Ok(String::from_utf8(public_key.key.public_key_to_pem()?)
-        .map_err(|_| ServiceError::ParseError)?)
+    String::from_utf8(public_key.key.public_key_to_pem()?).map_err(|_| ServiceError::ParseError)
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
+    use super::*;
     use crate::{
         adapter::kv_store::rocks_db::RocksDB,
         domain::auth::private_key::{PrivateKey, PublicKey},
     };
-    use super::*;
     use chrono::{Duration, Utc};
     use openssl::rsa::Padding;
 

@@ -1,4 +1,7 @@
-use axum::{routing::{get, post}, Json, Router};
+use axum::{
+    routing::{get, post},
+    Json, Router,
+};
 use uuid::Uuid;
 
 use crate::{

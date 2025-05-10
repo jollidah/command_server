@@ -5,6 +5,7 @@ use interfaces::TExecutor;
 use sqlx::{PgConnection, Pool, Postgres, Transaction};
 use tokio::sync::RwLock;
 pub mod auth;
+pub mod conversion;
 pub mod interfaces;
 pub mod project;
 
@@ -96,7 +97,7 @@ pub fn connection_pool() -> &'static sqlx::PgPool {
 #[cfg(test)]
 pub async fn tear_down() {
     // Delete all tables
-    for table in ["account_user", "project", "user_role"] {
+    for table in ["account_user", "project", "user_role", "vult_api_key"] {
         sqlx::query(&format!("TRUNCATE TABLE {} CASCADE", table))
             .execute(connection_pool())
             .await

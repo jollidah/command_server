@@ -18,6 +18,7 @@ mod domain;
 mod errors;
 mod service;
 
+#[allow(unused)]
 #[tokio::main]
 async fn main() {
     println!("Environment Variable Is Being Set...");

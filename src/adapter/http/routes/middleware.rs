@@ -4,9 +4,11 @@ use axum::http::{self, HeaderMap};
 use axum::middleware::Next;
 use axum::response::Response;
 use reqwest::StatusCode;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub(crate) struct CurrentUser {
+    pub user_id: Uuid,
     pub email: String,
 }
 
@@ -25,6 +27,7 @@ pub async fn auth_middleware(
         .verify_token(token)
         .map_err(|_| StatusCode::UNAUTHORIZED)?;
     let current_user = CurrentUser {
+        user_id: claims.user_id,
         email: claims.email,
     };
     request.extensions_mut().insert(current_user);

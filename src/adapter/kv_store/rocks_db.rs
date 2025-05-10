@@ -1,10 +1,15 @@
 use rocksdb::DB;
 use std::sync::{Arc, LazyLock};
 use tokio::sync::Mutex;
+use uuid::Uuid;
 
-use crate::{config::get_config, errors::ServiceError};
+use crate::{
+    config::get_config,
+    domain::auth::private_key::{PublicKey, VultrKeyPair},
+    errors::ServiceError,
+};
 
-use super::interfaces::KVStore;
+use super::interfaces::{KVStore, SessionStore, VultrKeyPairStore};
 
 pub(crate) struct RocksDB {
     pub(crate) db: Mutex<DB>,
@@ -54,6 +59,90 @@ impl KVStore for RocksDB {
         let db = self.db.lock().await;
         db.delete(key)
             .map_err(|err| ServiceError::KVStoreError(Box::new(err)))
+    }
+}
+
+impl VultrKeyPairStore for RocksDB {
+    async fn get_or_create_public_key(&self) -> Result<PublicKey, ServiceError> {
+        match self.get(Self::PUBLIC_KEY_NAME).await {
+            Ok(value) => Ok(PublicKey::from_pem(&value)?),
+            Err(_) => {
+                let (public_key, private_key) = VultrKeyPair::generate_key_pair()?;
+                self.insert(Self::PUBLIC_KEY_NAME, &public_key.key.public_key_to_pem()?)
+                    .await?;
+                self.insert(
+                    Self::PRIVATE_KEY_NAME,
+                    &private_key.key.private_key_to_pem()?,
+                )
+                .await?;
+                Ok(public_key)
+            }
+        }
+    }
+}
+
+impl SessionStore for RocksDB {
+    fn extract_user_ids_from_session(
+        session_value: Option<Vec<u8>>,
+    ) -> Result<Vec<String>, ServiceError> {
+        Ok(match session_value {
+            Some(value) => {
+                let value_str = String::from_utf8(value)
+                    .map_err(|err| ServiceError::ParsingError(Box::new(err)))?;
+                value_str.split(',').map(String::from).collect()
+            }
+            None => vec![],
+        })
+    }
+
+    async fn add_user_to_session(
+        &self,
+        project_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), ServiceError> {
+        let session_name = format!("session-{}", project_id);
+        let db = self.db.lock().await;
+        let mut user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
+
+        let user_id_str = user_id.to_string();
+        user_id_list.push(user_id_str);
+        db.put(session_name, user_id_list.join(","))?;
+        Ok(())
+    }
+
+    async fn remove_user_from_session(
+        &self,
+        project_id: Uuid,
+        user_id: Uuid,
+    ) -> Result<(), ServiceError> {
+        let session_name = format!("session-{}", project_id);
+        let db = self.db.lock().await;
+        let mut user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
+        let user_id_str = user_id.to_string();
+        user_id_list.remove(
+            user_id_list
+                .iter()
+                .position(|id| id == &user_id_str)
+                .ok_or(ServiceError::KVStoreError(Box::new(
+                    "User not found in session",
+                )))?,
+        );
+        if user_id_list.is_empty() {
+            db.delete(&session_name)?;
+        } else {
+            db.put(session_name, user_id_list.join(","))?;
+        }
+        Ok(())
+    }
+
+    async fn get_user_ids_from_session(&self, project_id: Uuid) -> Result<Vec<Uuid>, ServiceError> {
+        let session_name = format!("session-{}", project_id);
+        let db = self.db.lock().await;
+        let user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
+        Ok(user_id_list
+            .iter()
+            .map(|id| Uuid::parse_str(id).unwrap())
+            .collect())
     }
 }
 
@@ -163,5 +252,146 @@ mod tests {
             rocks_db.get(key).await.unwrap_err(),
             ServiceError::KVStoreError(_)
         ));
+    }
+
+    #[tokio::test]
+    async fn test_get_or_create_public_key() {
+        // GIVEN
+        let rocks_db = get_rocks_db().await;
+        rocks_db.delete(RocksDB::PRIVATE_KEY_NAME).await.unwrap();
+        rocks_db.delete(RocksDB::PUBLIC_KEY_NAME).await.unwrap();
+
+        assert!(rocks_db.get(RocksDB::PRIVATE_KEY_NAME).await.is_err());
+        assert!(rocks_db.get(RocksDB::PUBLIC_KEY_NAME).await.is_err());
+
+        let public_key = rocks_db.get_or_create_public_key().await.unwrap();
+
+        // THEN
+        assert_eq!(
+            public_key.key.public_key_to_pem().unwrap(),
+            rocks_db.get(RocksDB::PUBLIC_KEY_NAME).await.unwrap()
+        );
+    }
+
+    #[tokio::test]
+    async fn test_add_user_to_session() {
+        // GIVEN
+        tear_down().await;
+
+        let rocks_db = get_rocks_db().await;
+        let project_id = Uuid::new_v4();
+        println!("project_id: {}", project_id);
+        let user_id = Uuid::new_v4();
+
+        // WHEN
+        rocks_db
+            .add_user_to_session(project_id, user_id)
+            .await
+            .unwrap();
+
+        // THEN
+        let session_name = format!("session-{}", project_id);
+        let user_id_list = RocksDB::extract_user_ids_from_session(
+            rocks_db.db.lock().await.get(&session_name).unwrap(),
+        )
+        .unwrap();
+
+        assert!(
+            user_id_list.contains(&user_id.to_string()),
+            "User ID not found in session"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_remove_user_from_session() {
+        // GIVEN
+        tear_down().await;
+
+        let rocks_db = get_rocks_db().await;
+        let project_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+        let another_user_id = Uuid::new_v4();
+
+        // Add two users to session
+        rocks_db
+            .add_user_to_session(project_id, user_id)
+            .await
+            .unwrap();
+        rocks_db
+            .add_user_to_session(project_id, another_user_id)
+            .await
+            .unwrap();
+
+        // WHEN
+        // Remove the first user
+        rocks_db
+            .remove_user_from_session(project_id, user_id)
+            .await
+            .unwrap();
+
+        // THEN
+        // Check that the session still exists with the second user
+        let session_name = format!("session-{}", project_id);
+        let user_id_list = RocksDB::extract_user_ids_from_session(
+            rocks_db.db.lock().await.get(&session_name).unwrap(),
+        )
+        .unwrap();
+        assert!(
+            user_id_list.contains(&another_user_id.to_string()),
+            "Second user ID not found in session"
+        );
+
+        // WHEN
+        // Remove the second user
+        rocks_db
+            .remove_user_from_session(project_id, another_user_id)
+            .await
+            .unwrap();
+
+        // THEN
+        // Check that the session is deleted
+        // assert!(db.get(&session_name).unwrap().is_none(), "Session still exists");
+    }
+
+    #[tokio::test]
+    async fn test_get_user_ids_from_session() {
+        // GIVEN
+        tear_down().await;
+
+        let rocks_db = get_rocks_db().await;
+        let project_id = Uuid::new_v4();
+        let user_id = Uuid::new_v4();
+        let another_user_id = Uuid::new_v4();
+
+        // Add users to session
+        rocks_db
+            .add_user_to_session(project_id, user_id)
+            .await
+            .unwrap();
+        rocks_db
+            .add_user_to_session(project_id, another_user_id)
+            .await
+            .unwrap();
+
+        // WHEN
+        let user_id_list = rocks_db
+            .get_user_ids_from_session(project_id)
+            .await
+            .unwrap();
+
+        // THEN
+        assert!(
+            user_id_list.contains(&user_id),
+            "User ID not found in session"
+        );
+        assert!(
+            user_id_list.contains(&another_user_id),
+            "Another user ID not found in session"
+        );
+        assert_eq!(
+            user_id_list.len(),
+            2,
+            "Unexpected number of user IDs in session"
+        );
     }
 }

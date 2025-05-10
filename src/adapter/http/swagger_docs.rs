@@ -4,7 +4,7 @@ use crate::domain::{
         AuthenticationTokens,
     },
     project::{
-        commands::{AssignRole, CreateProject, DeleteProject, ExpelMember},
+        commands::{AssignRole, CreateProject, DeleteProject, ExpelMember, RegisterVultApiKey},
         UserRole,
     },
 };
@@ -19,6 +19,7 @@ use utoipa::OpenApi;
     auth::issue_tokens,
     auth::check_verification_email,
     auth::refresh_tokens,
+    auth::get_public_key,
  ),
  components(
      schemas(
@@ -42,6 +43,7 @@ pub struct AuthDoc;
     project::expel_member,
     project::create_project,
     project::delete_project,
+    project::register_vult_api_key,
  ),
  components(
      schemas(
@@ -50,6 +52,7 @@ pub struct AuthDoc;
          CreateProject,
          DeleteProject,
          UserRole,
+         RegisterVultApiKey,
       )
  ),
  tags(

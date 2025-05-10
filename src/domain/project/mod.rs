@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::errors::ServiceError;
 
 pub mod commands;
+
 #[allow(unused)]
 pub struct ProjectAggregate {
     pub(crate) id: Uuid,
@@ -70,6 +71,22 @@ impl Display for UserRole {
             UserRole::Admin => write!(f, "admin"),
             UserRole::Editor => write!(f, "editor"),
             UserRole::Viewer => write!(f, "viewer"),
+        }
+    }
+}
+
+pub struct VultApiKeyEntity {
+    pub(crate) project_id: Uuid,
+    pub(crate) api_key: String,
+    pub(crate) update_dt: DateTime<Utc>,
+}
+
+impl VultApiKeyEntity {
+    pub fn new(project_id: Uuid, api_key: String) -> Self {
+        Self {
+            project_id,
+            api_key,
+            update_dt: Utc::now(),
         }
     }
 }

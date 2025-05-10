@@ -27,13 +27,7 @@ pub async fn insert_user_account(
     )
     .execute(trx)
     .await
-    .map_err(|err| {
-        tracing::error!("Failed to insert user account: {}", err);
-        match err {
-            sqlx::Error::Database(err) => ServiceError::DatabaseConnectionError(Box::new(err)),
-            _ => ServiceError::DatabaseConnectionError(Box::new(err)),
-        }
-    })?;
+    .map_err(Into::<ServiceError>::into)?;
     Ok(())
 }
 
@@ -48,13 +42,7 @@ pub async fn get_user_account_by_email(
     )
     .fetch_one(conn)
     .await
-    .map_err(|err| {
-        tracing::error!("Failed to get user account by email: {}", err);
-        match err {
-            sqlx::Error::RowNotFound => ServiceError::RowNotFound,
-            _ => ServiceError::DatabaseConnectionError(Box::new(err)),
-        }
-    })
+    .map_err(Into::<ServiceError>::into)
 }
 
 pub async fn update_user_account(
@@ -77,13 +65,7 @@ pub async fn update_user_account(
     )
     .execute(trx)
     .await
-    .map_err(|err| {
-        tracing::error!("Failed to update user account: {}", err);
-        match err {
-            sqlx::Error::Database(err) => ServiceError::DatabaseConnectionError(Box::new(err)),
-            _ => ServiceError::DatabaseConnectionError(Box::new(err)),
-        }
-    })?;
+    .map_err(Into::<ServiceError>::into)?;
     Ok(())
 }
 

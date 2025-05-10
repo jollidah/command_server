@@ -27,3 +27,9 @@ pub(crate) struct AssignRole {
     pub(crate) invitee_email: String,
     pub(crate) role: UserRole,
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
+pub(crate) struct RegisterVultApiKey {
+    pub(crate) project_id: Uuid,
+    pub(crate) api_key: Vec<u8>,
+}

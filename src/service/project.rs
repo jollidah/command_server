@@ -1,14 +1,21 @@
+use crate::adapter::kv_store::interfaces::{KVStore, VultrKeyPairStore};
+use crate::adapter::kv_store::rocks_db::{get_rocks_db, RocksDB};
 use crate::adapter::mail::{send_email, Email, EmailType};
 use crate::adapter::repositories::interfaces::TExecutor;
 use crate::adapter::repositories::project::{
     delete_project, delete_user_role, get_project, get_user_role, insert_project, upsert_user_role,
+    upsert_vult_api_key,
 };
 use crate::adapter::repositories::{connection_pool, SqlExecutor};
-use crate::domain::project::commands::{AssignRole, DeleteProject, ExpelMember};
+use crate::domain::auth::private_key::PrivateKey;
+use crate::domain::project::commands::{
+    AssignRole, DeleteProject, ExpelMember, RegisterVultApiKey,
+};
 use crate::domain::project::{commands::CreateProject, ProjectAggregate};
-use crate::domain::project::{UserRole, UserRoleEntity};
+use crate::domain::project::{UserRole, UserRoleEntity, VultApiKeyEntity};
 use crate::errors::ServiceError;
 use crate::CurrentUser;
+use serde_json::{json, Value};
 use uuid::Uuid;
 
 pub async fn handle_create_project(
@@ -87,17 +94,60 @@ pub async fn handle_expel_member(
     Ok(())
 }
 
+pub async fn handle_register_vult_api_key(
+    cmd: RegisterVultApiKey,
+    current_user: CurrentUser,
+) -> Result<(), ServiceError> {
+    let user_role = get_user_role(cmd.project_id, &current_user.email, connection_pool()).await?;
+    user_role.verify_admin()?;
+    println!("user_role: {:?}", user_role.role);
+    let ext = SqlExecutor::new();
+    ext.write().await.begin().await?;
+    let rocks_db = get_rocks_db().await;
+
+    let private_key = rocks_db.get(RocksDB::PRIVATE_KEY_NAME).await?;
+    let private_key = PrivateKey::from_pem(&private_key)?;
+    let api_key = private_key.decode_data(&cmd.api_key)?;
+
+    upsert_vult_api_key(
+        &VultApiKeyEntity::new(cmd.project_id, api_key),
+        ext.write().await.transaction(),
+    )
+    .await?;
+    ext.write().await.commit().await?;
+    ext.write().await.close().await;
+    Ok(())
+}
+
+pub async fn handle_session_sse(
+    current_user: &CurrentUser,
+    project_id: Uuid,
+) -> Result<Value, ServiceError> {
+    let user_role = get_user_role(project_id, &current_user.email, connection_pool()).await?;
+    user_role.verify_admin()?;
+
+    let test_struct_json = json!({
+        "message": "hi!"
+    });
+    Ok(test_struct_json)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
         adapter::repositories::{
             connection_pool,
-            project::{get_project, get_user_role},
+            project::{get_project, get_user_role, get_vult_api_key},
         },
-        domain::auth::{commands::CreateUserAccount, UserAccountAggregate},
-        service::auth::tests::create_user_account_helper,
+        domain::auth::{
+            commands::CreateUserAccount,
+            private_key::{tests::encode_data_with_public_key, PublicKey},
+            UserAccountAggregate,
+        },
+        service::auth::{handle_get_public_key, tests::create_user_account_helper},
     };
+
     pub async fn create_project_helper() -> (UserAccountAggregate, ProjectAggregate, CurrentUser) {
         let user_account = create_user_account_helper().await;
         let create_project_cmd = CreateProject {
@@ -106,6 +156,7 @@ mod tests {
         };
         let current_user = CurrentUser {
             email: user_account.email.clone(),
+            user_id: Uuid::new_v4(),
         };
         let project_id = handle_create_project(create_project_cmd.clone(), current_user.clone())
             .await
@@ -131,6 +182,7 @@ mod tests {
         // WHEN
         let current_user = CurrentUser {
             email: create_user_cmd.email.clone(),
+            user_id: Uuid::new_v4(),
         };
         let project_id = handle_create_project(create_project_cmd, current_user.clone())
             .await
@@ -227,6 +279,7 @@ mod tests {
         };
         let current_user = CurrentUser {
             email: non_admin_user_account.email.clone(),
+            user_id: non_admin_user_account.id,
         };
 
         // THEN
@@ -252,6 +305,7 @@ mod tests {
         // WHEN
         let non_admin_user = CurrentUser {
             email: non_admin_user_account.email.clone(),
+            user_id: non_admin_user_account.id,
         };
         let expel_member_cmd = ExpelMember {
             project_id: project.id,
@@ -263,5 +317,81 @@ mod tests {
             handle_expel_member(expel_member_cmd, non_admin_user.clone()).await,
             Err(ServiceError::Unauthorized)
         ));
+    }
+
+    #[tokio::test]
+    async fn test_register_vult_api_key() {
+        // GIVEN
+        let rocks_db = get_rocks_db().await;
+        rocks_db.delete(RocksDB::PRIVATE_KEY_NAME).await.unwrap();
+        rocks_db.delete(RocksDB::PUBLIC_KEY_NAME).await.unwrap();
+
+        let (_, project, current_user) = create_project_helper().await;
+        let public_key = handle_get_public_key().await.unwrap();
+        let test_api_key = "test api_key";
+
+        let encoded_api_key = encode_data_with_public_key(
+            PublicKey::from_pem(public_key.as_bytes()).unwrap(),
+            test_api_key.as_bytes(),
+        )
+        .await;
+        let register_vult_api_key_cmd = RegisterVultApiKey {
+            project_id: project.id,
+            api_key: encoded_api_key,
+        };
+
+        // WHEN
+        handle_register_vult_api_key(register_vult_api_key_cmd, current_user.clone())
+            .await
+            .unwrap();
+
+        // THEN
+        let vult_api_key = get_vult_api_key(project.id, connection_pool())
+            .await
+            .unwrap();
+        assert_eq!(vult_api_key.api_key, test_api_key);
+    }
+
+    #[tokio::test]
+    async fn test_register_vult_api_key_by_non_admin() {
+        // GIVEN
+        let rocks_db = get_rocks_db().await;
+        rocks_db.delete(RocksDB::PRIVATE_KEY_NAME).await.unwrap();
+        rocks_db.delete(RocksDB::PUBLIC_KEY_NAME).await.unwrap();
+
+        let (_, project, current_user) = create_project_helper().await;
+        let public_key = handle_get_public_key().await.unwrap();
+        let test_api_key = "test api_key";
+
+        let encoded_api_key = encode_data_with_public_key(
+            PublicKey::from_pem(public_key.as_bytes()).unwrap(),
+            test_api_key.as_bytes(),
+        )
+        .await;
+        let register_vult_api_key_cmd = RegisterVultApiKey {
+            project_id: project.id,
+            api_key: encoded_api_key,
+        };
+
+        let mut user_role = get_user_role(project.id, &current_user.email, connection_pool())
+            .await
+            .unwrap();
+        user_role.role = UserRole::Viewer;
+
+        let ext = SqlExecutor::new();
+        ext.write().await.begin().await.unwrap();
+        upsert_user_role(&user_role, ext.write().await.transaction())
+            .await
+            .unwrap();
+
+        ext.write().await.commit().await.unwrap();
+        ext.write().await.close().await;
+
+        // WHEN
+        let result =
+            handle_register_vult_api_key(register_vult_api_key_cmd, current_user.clone()).await;
+
+        // THEN
+        assert!(matches!(result, Err(ServiceError::Unauthorized)));
     }
 }

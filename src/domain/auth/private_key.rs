@@ -19,7 +19,7 @@ impl PublicKey {
 pub struct PrivateKey {
     pub key: Rsa<Private>,
 }
-
+#[allow(unused)]
 impl PrivateKey {
     pub fn from_pem(pem: &[u8]) -> Result<Self, ServiceError> {
         let key = Rsa::private_key_from_pem(pem)?;

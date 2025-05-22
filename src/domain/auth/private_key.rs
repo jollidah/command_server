@@ -74,4 +74,12 @@ pub mod tests {
         let decoded_token = private_key.decode_data(&encoded_token).unwrap();
         assert_eq!(decoded_token, test_string);
     }
+    #[ignore]
+    #[tokio::test]
+    async fn test_encode_data_with_public_key() {
+        let public_key = PublicKey::from_pem("test_public_key".as_bytes()).unwrap();
+        let api_key = "test_api_key";
+        let target = encode_data_with_public_key(public_key, api_key.as_bytes()).await;
+        println!("{:?}", target);
+    }
 }

@@ -1,9 +1,6 @@
-use std::collections::HashMap;
-
-use chrono::{DateTime, Utc};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use uuid::Uuid;
 
 use super::extract_schema_from_response;
@@ -18,50 +15,6 @@ use crate::{
     domain::project::diagrams::BlockStorage,
     errors::ServiceError,
 };
-
-pub struct BlockStorageCommandFactory;
-impl BlockStorageCommandFactory {
-    pub fn list_block_storage() -> ListBlockStorage {
-        ListBlockStorage {}
-    }
-    pub fn create_block_storage(region: String, size_gb: i64, label: String) -> CreateBlockStorage {
-        CreateBlockStorage {
-            region,
-            size_gb,
-            label,
-        }
-    }
-    pub fn get_block_storage(id: Uuid) -> GetBlockStorage {
-        GetBlockStorage { id }
-    }
-    pub fn delete_block_storage(id: Uuid) -> DeleteBlockStorage {
-        DeleteBlockStorage { id: Some(id) }
-    }
-    pub fn update_block_storage(id: Uuid, label: String, size_gb: i64) -> UpdateBlockStorage {
-        UpdateBlockStorage {
-            id: Some(id),
-            label,
-            size_gb,
-        }
-    }
-    pub fn attach_block_storage_to_instance(
-        id: Uuid,
-        instance_id: Uuid,
-        live: bool,
-    ) -> AttachBlockStorageToCompute {
-        AttachBlockStorageToCompute {
-            id: Some(id),
-            instance_id,
-            live,
-        }
-    }
-    pub fn detach_block_storage_from_instance(
-        id: Uuid,
-        live: bool,
-    ) -> DetachBlockStorageFromCompute {
-        DetachBlockStorageFromCompute { id: Some(id), live }
-    }
-}
 
 #[derive(Serialize)]
 pub struct ListBlockStorage;
@@ -153,12 +106,9 @@ impl ExecuteVultrDeleteCommand for DeleteBlockStorage {
 }
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for UpdateBlockStorage {
-    fn get_id(&self) -> Option<Uuid> {
-        self.id
-    }
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
         let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
-        let response = vultr_client
+        vultr_client
             .build_request(Method::PUT, format!("blocks/{}", id))
             .send()
             .await?;
@@ -167,9 +117,6 @@ impl ExecuteVultrUpdateCommand for UpdateBlockStorage {
 }
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for AttachBlockStorageToCompute {
-    fn get_id(&self) -> Option<Uuid> {
-        self.id
-    }
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
         let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
@@ -181,9 +128,6 @@ impl ExecuteVultrUpdateCommand for AttachBlockStorageToCompute {
 }
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for DetachBlockStorageFromCompute {
-    fn get_id(&self) -> Option<Uuid> {
-        self.id
-    }
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
         let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client

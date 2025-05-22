@@ -8,6 +8,7 @@ pub struct Config {
     pub gmail_username: String,
     pub gmail_app_password: String,
     pub jwt_secret: String,
+    pub architector_server_url: String,
 }
 
 impl Config {
@@ -25,6 +26,8 @@ impl Config {
             gmail_app_password: std::env::var("GMAIL_APP_PASSWORD").unwrap(),
             jwt_secret: std::env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
+            architector_server_url: std::env::var("ARCHITECTOR_SERVER_URL")
+                .unwrap_or_else(|_| "http://localhost:8000".to_string()),
         })
     }
 }

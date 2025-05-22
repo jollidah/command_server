@@ -1,3 +1,4 @@
+use crate::adapter::request_dispensor::architector_server::RequestArchitectureSuggestion;
 use crate::domain::{
     auth::{
         commands::{CheckVerification, CreateUserAccount, IssueTokens, RefreshTokens},
@@ -49,6 +50,7 @@ pub struct AuthDoc;
         project::register_vult_api_key,
         project::session_sse,
         project::deploy_project,
+        project::request_architecture_suggestion,
     ),
     components(
         schemas(
@@ -59,6 +61,7 @@ pub struct AuthDoc;
             DeployProject,
             UserRole,
             RegisterVultApiKey,
+            RequestArchitectureSuggestion,
         )
     ),
     tags(

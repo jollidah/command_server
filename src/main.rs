@@ -12,7 +12,6 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 mod adapter;
-mod bootstrap;
 mod config;
 mod domain;
 mod errors;
@@ -31,7 +30,7 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "command_server=debug,tower_http=info,axum::rejection=trace,trace".into()
+                "command_server=debug,tower_http=info,axum::rejection=trace,info".into()
             }),
         )
         .with(tracing_subscriber::fmt::layer())

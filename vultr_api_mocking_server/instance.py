@@ -6,7 +6,7 @@ instance_bp = Blueprint('instance_bp', __name__)
 # 메모리 내 인스턴스 저장소
 instances = {}
 
-# Create Instance (필수 필드만)
+# Create Compute (필수 필드만)
 @instance_bp.route('/v2/instances', methods=['POST'])
 def create_instance():
     data = request.json
@@ -27,23 +27,23 @@ def create_instance():
     instances[instance_id] = instance
     return jsonify({'instance': instance}), 200
 
-# List Instances
+# List Computes
 @instance_bp.route('/v2/instances', methods=['GET'])
 def list_instances():
     return jsonify({'instances': list(instances.values())}), 200
 
-# Get Instance
+# Get Compute
 @instance_bp.route('/v2/instances/<id>', methods=['GET'])
 def get_instance(id):
     if id not in instances:
-        return jsonify({'error': 'Instance not found'}), 404
+        return jsonify({'error': 'Compute not found'}), 404
     return jsonify({'instance': instances[id]}), 200
 
-# Update Instance (label only)
+# Update Compute (label only)
 @instance_bp.route('/v2/instances/<id>', methods=['PATCH'])
 def update_instance(id):
     if id not in instances:
-        return jsonify({'error': 'Instance not found'}), 404
+        return jsonify({'error': 'Compute not found'}), 404
     data = request.json
     if 'label' in data:
         instances[id]['label'] = data['label']
@@ -53,7 +53,7 @@ def update_instance(id):
 @instance_bp.route('/v2/instances/<id>/vpcs', methods=['POST'])
 def attach_vpc(id):
     if id not in instances:
-        return jsonify({'error': 'Instance not found'}), 404
+        return jsonify({'error': 'Compute not found'}), 404
     data = request.json
     vpc_id = data.get('vpc_id')
     if not vpc_id:
@@ -65,6 +65,6 @@ def attach_vpc(id):
 @instance_bp.route('/v2/instances/<id>/vpcs/<vpc_id>', methods=['DELETE'])
 def detach_vpc(id, vpc_id):
     if id not in instances:
-        return jsonify({'error': 'Instance not found'}), 404
+        return jsonify({'error': 'Compute not found'}), 404
     instances[id]['vpc_ids'] = [v for v in instances[id]['vpc_ids'] if v != vpc_id]
     return jsonify({'instance': instances[id]}), 200

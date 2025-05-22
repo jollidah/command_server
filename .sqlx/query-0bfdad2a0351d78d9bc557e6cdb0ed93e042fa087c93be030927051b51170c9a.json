@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            project_id,\n            tier_id,\n            id,\n            cluster_id,\n            label,\n            x,\n            y\n        FROM object_storage\n        WHERE project_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "tier_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "cluster_id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "label",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "x",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "y",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0bfdad2a0351d78d9bc557e6cdb0ed93e042fa087c93be030927051b51170c9a"
+}

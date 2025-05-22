@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE firewall_group\n        SET description = $1,\n            x = $2,\n            y = $3\n        WHERE project_id = $4 AND id = $5\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cadd46d987e30ff9b76da6451558f3c731f193a7b596befbf5527e0b7e874426"
+}

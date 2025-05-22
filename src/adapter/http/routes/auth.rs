@@ -1,7 +1,4 @@
-use axum::{
-    routing::{get, post},
-    Json, Router,
-};
+use axum::{routing::post, Json, Router};
 use uuid::Uuid;
 
 use crate::{
@@ -12,8 +9,8 @@ use crate::{
     },
     errors::ServiceError,
     service::auth::{
-        handle_check_verification_email, handle_create_user_account, handle_get_public_key,
-        handle_issue_tokens, handle_refresh_tokens,
+        handle_check_verification_email, handle_create_user_account, handle_issue_tokens,
+        handle_refresh_tokens,
     },
 };
 
@@ -88,20 +85,6 @@ pub async fn check_verification_email(
     handle_check_verification_email(cmd).await
 }
 
-/// Get public key
-#[axum::debug_handler]
-#[utoipa::path(
-    get,
-    path = "/external/auth/public-key",
-    responses(
-        (status = 200, body = String)
-    )
-)]
-pub async fn get_public_key() -> Result<WebResponse<String>, ServiceError> {
-    let public_key = handle_get_public_key().await?;
-    Ok(WebResponse(public_key))
-}
-
 pub fn auth_router() -> Router {
     let non_auth_router = Router::new()
         .route("/external/auth/login", post(issue_tokens))
@@ -111,8 +94,6 @@ pub fn auth_router() -> Router {
             "/external/auth/verification/check",
             post(check_verification_email),
         );
-    let auth_router = Router::new()
-        .route("/external/auth/vult-api-key", get(get_public_key))
-        .route_layer(axum::middleware::from_fn(auth_middleware));
+    let auth_router = Router::new().route_layer(axum::middleware::from_fn(auth_middleware));
     non_auth_router.merge(auth_router)
 }

@@ -5,20 +5,19 @@ use axum::{
     routing::{delete, get, post, put},
     Extension, Json, Router,
 };
+use chrono::{TimeZone, Utc};
 use uuid::Uuid;
 
 use crate::{
-    adapter::{
-        http::conversion::WebResponse,
-        kv_store::{interfaces::SessionStore, rocks_db::get_rocks_db},
-    },
+    adapter::http::conversion::WebResponse,
     domain::project::commands::{
-        AssignRole, CreateProject, DeleteProject, ExpelMember, RegisterVultApiKey,
+        AssignRole, CreateProject, DeleteProject, DeployProject, ExpelMember, RegisterVultApiKey,
     },
     errors::ServiceError,
     service::project::{
-        handle_assign_role, handle_create_project, handle_delete_project, handle_expel_member,
-        handle_register_vult_api_key, handle_session_sse,
+        handle_assign_role, handle_create_project, handle_delete_project, handle_deploy_project,
+        handle_expel_member, handle_get_public_key, handle_register_vultr_api_key,
+        handle_session_sse,
     },
     CurrentUser,
 };
@@ -99,6 +98,20 @@ pub async fn delete_project(Path(project_id): Path<Uuid>) -> Result<(), ServiceE
     Ok(())
 }
 
+/// Get public key
+#[axum::debug_handler]
+#[utoipa::path(
+    get,
+    path = "/external/project/public-key",
+    responses(
+        (status = 200, body = String)
+    )
+)]
+pub async fn get_public_key() -> Result<WebResponse<String>, ServiceError> {
+    let public_key = handle_get_public_key().await?;
+    Ok(WebResponse(public_key))
+}
+
 /// Register (updsert) vult api key for admin
 #[axum::debug_handler]
 #[utoipa::path(
@@ -113,17 +126,18 @@ pub async fn register_vult_api_key(
     Extension(current_user): Extension<CurrentUser>,
     Json(cmd): Json<RegisterVultApiKey>,
 ) -> Result<(), ServiceError> {
-    handle_register_vult_api_key(cmd, current_user).await?;
+    handle_register_vultr_api_key(cmd, current_user).await?;
     Ok(())
 }
 
 use axum::response::sse::{Event, KeepAlive, Sse};
 use futures_util::stream::Stream;
 use std::convert::Infallible;
+
 /// Start session
 #[axum::debug_handler]
 #[utoipa::path(
-    post,
+    get,
     path = "/external/project/{project_id}/session",
     request_body(content = (), content_type = "application/json"),
     responses(
@@ -134,28 +148,34 @@ async fn session_sse(
     Extension(current_user): Extension<CurrentUser>,
     Path(project_id): Path<Uuid>,
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
-    let rocks_db = get_rocks_db().await;
-
-    // Session 정보(project_id, user_id) 추가
-    rocks_db
-        .add_user_to_session(project_id, current_user.user_id)
-        .await
-        .unwrap();
-    let user_id = current_user.user_id;
     let stream = async_stream::try_stream! {
-        let message = handle_session_sse(&current_user, project_id).await.unwrap();
-        yield Event::default().json_data(message).unwrap();
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        let mut last_update_dt = Utc::with_ymd_and_hms(&Utc, 2000, 1, 1, 0, 0, 0).unwrap();
+        loop {
+            let message = handle_session_sse(&current_user, project_id, &mut last_update_dt).await.unwrap();
+            yield Event::default().json_data(message).unwrap();
+            tokio::time::sleep(Duration::from_secs(1)).await;
+        }
     };
 
-    // Session 정보(project_id, user_id) 제거
-    let rocks_db = get_rocks_db().await;
-    rocks_db
-        .remove_user_from_session(project_id, user_id)
-        .await
-        .unwrap();
-
     Sse::new(stream).keep_alive(KeepAlive::default())
+}
+
+/// Deploy project
+#[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = "/external/project/deploy",
+    request_body(content = DeployProject, content_type = "application/json"),
+    responses(
+        (status = 200, body = ())
+    )
+)]
+pub async fn deploy_project(
+    Extension(current_user): Extension<CurrentUser>,
+    Json(cmd): Json<DeployProject>,
+) -> Result<(), ServiceError> {
+    handle_deploy_project(cmd, current_user).await?;
+    Ok(())
 }
 
 pub fn project_router() -> Router {
@@ -167,7 +187,12 @@ pub fn project_router() -> Router {
         )
         .route("/external/project", post(create_project))
         .route("/external/project/{project_id}", delete(delete_project))
+        .route("/external/project/public-key", get(get_public_key))
         .route("/external/project/vult-api-key", put(register_vult_api_key))
         .route("/external/project/{project_id}/session", get(session_sse))
+        .route(
+            "/external/project/{project_id}/deploy",
+            post(deploy_project),
+        )
         .route_layer(axum::middleware::from_fn(auth_middleware))
 }

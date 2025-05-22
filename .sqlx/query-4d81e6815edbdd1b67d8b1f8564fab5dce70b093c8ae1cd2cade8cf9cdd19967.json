@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO object_storage (\n            project_id,\n            tier_id,\n            id,\n            cluster_id,\n            label,\n            x,\n            y\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int8",
+        "Uuid",
+        "Int8",
+        "Varchar",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "4d81e6815edbdd1b67d8b1f8564fab5dce70b093c8ae1cd2cade8cf9cdd19967"
+}

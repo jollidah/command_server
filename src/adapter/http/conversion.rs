@@ -17,7 +17,7 @@ impl IntoResponse for ServiceError {
             Self::DatabaseConnectionError(err) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
             }
-            Self::RowNotFound => (StatusCode::NOT_FOUND, "Row not found").into_response(),
+            Self::NotFound => (StatusCode::NOT_FOUND, "Row not found").into_response(),
             Self::KVStoreError(err) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err)).into_response()
             }

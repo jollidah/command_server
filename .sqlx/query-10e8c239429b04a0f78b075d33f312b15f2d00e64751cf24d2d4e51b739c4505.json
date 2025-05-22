@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE block_storage\n        SET \n            region_id = $1,\n            mount_id = $2,\n            attached_to_instance = $3,\n            size_gb = $4,\n            label = $5,\n            x = $6,\n            y = $7\n        WHERE project_id = $8 AND id = $9\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Uuid",
+        "Int8",
+        "Varchar",
+        "Int8",
+        "Int8",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "10e8c239429b04a0f78b075d33f312b15f2d00e64751cf24d2d4e51b739c4505"
+}

@@ -1,8 +1,7 @@
-use std::sync::Arc;
-
 use crate::{config::get_config, errors::ServiceError};
 use interfaces::TExecutor;
 use sqlx::{PgConnection, Pool, Postgres, Transaction};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 pub mod auth;
 pub mod conversion;
@@ -46,7 +45,15 @@ impl TExecutor for SqlExecutor {
             }
         }
     }
-
+    async fn rollback(&mut self) -> Result<(), ServiceError> {
+        match self.transaction.take() {
+            None => panic!("Tranasction Has Not Begun!"),
+            Some(trx) => trx
+                .rollback()
+                .await
+                .map_err(|err| ServiceError::DatabaseConnectionError(Box::new(err))),
+        }
+    }
     async fn commit(&mut self) -> Result<(), ServiceError> {
         match self.transaction.take() {
             None => panic!("Transaction lost!"),

@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO firewall_group (\n            project_id,\n            id,\n            description,\n            x,\n            y\n        ) VALUES ($1, $2, $3, $4, $5)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "baa85dad6531d6b0feaf06fd7a1bf86d2d72fe1cf232cf837b2970990c1f1b7d"
+}

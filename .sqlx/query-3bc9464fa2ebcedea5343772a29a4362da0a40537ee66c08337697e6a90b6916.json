@@ -1,0 +1,33 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE managed_database\n        SET \n            status = $1,\n            plan = $2,\n            database_engine = $3,\n            database_engine_version = $4,\n            latest_backup = $5,\n            label = $6,\n            x = $7,\n            y = $8\n        WHERE project_id = $9 AND id = $10\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        {
+          "Custom": {
+            "name": "database_engine",
+            "kind": {
+              "Enum": [
+                "mysql",
+                "pg"
+              ]
+            }
+          }
+        },
+        "Int8",
+        "Varchar",
+        "Varchar",
+        "Int8",
+        "Int8",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "3bc9464fa2ebcedea5343772a29a4362da0a40537ee66c08337697e6a90b6916"
+}

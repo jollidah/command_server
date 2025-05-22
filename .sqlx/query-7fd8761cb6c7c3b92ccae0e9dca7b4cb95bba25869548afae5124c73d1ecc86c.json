@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE object_storage\n        SET \n            tier_id = $1,\n            cluster_id = $2,\n            label = $3,\n            x = $4,\n            y = $5\n        WHERE project_id = $6 AND id = $7\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Int8",
+        "Varchar",
+        "Int8",
+        "Int8",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7fd8761cb6c7c3b92ccae0e9dca7b4cb95bba25869548afae5124c73d1ecc86c"
+}

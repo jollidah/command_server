@@ -1,39 +1,26 @@
+use std::collections::HashMap;
+
 use chrono::{DateTime, Utc};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use uuid::Uuid;
 
 use super::extract_schema_from_response;
 use crate::{
-    adapter::request_dispensor::vultr::{interfaces::ExecuteVultrCommand, VultrClient},
+    adapter::request_dispensor::vultr::{
+        interfaces::{
+            ExecuteVultrCreateCommand, ExecuteVultrDeleteCommand, ExecuteVultrGetCommand,
+            ExecuteVultrUpdateCommand,
+        },
+        VultrClient,
+    },
+    domain::project::{
+        diagrams::FirewallGroup,
+        enums::{IpType, Protocol},
+    },
     errors::ServiceError,
 };
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FirewallGroup {
-    id: Uuid,
-    description: String,
-    date_created: DateTime<Utc>,
-    date_modified: DateTime<Utc>,
-    instance_count: i64,
-    rule_count: i64,
-    max_rule_count: i64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FirewallRule {
-    id: i64,
-    #[serde(rename = "type")]
-    rule_type: String, // "type"은 Rust 키워드이므로 이름 변경
-    ip_type: String,
-    action: String,
-    protocol: String,
-    port: String,
-    subnet: String,
-    subnet_size: i64,
-    source: String,
-    notes: String,
-}
 
 pub struct FireWallCommandFactory;
 impl FireWallCommandFactory {
@@ -47,10 +34,13 @@ impl FireWallCommandFactory {
         GetFirewallGroup { id }
     }
     pub fn update_firewall_group(id: Uuid, description: String) -> UpdateFirewallGroup {
-        UpdateFirewallGroup { id, description }
+        UpdateFirewallGroup {
+            id: Some(id),
+            description,
+        }
     }
     pub fn delete_firewall_group(id: Uuid) -> DeleteFirewallGroup {
-        DeleteFirewallGroup { id }
+        DeleteFirewallGroup { id: Some(id) }
     }
     #[allow(clippy::too_many_arguments)]
     pub fn create_firewall_rule(
@@ -60,7 +50,6 @@ impl FireWallCommandFactory {
         port: String,
         subnet: String,
         subnet_size: i64,
-        source: String,
         notes: String,
     ) -> CreateFirewallRule {
         CreateFirewallRule {
@@ -69,7 +58,6 @@ impl FireWallCommandFactory {
             port,
             subnet,
             subnet_size,
-            source,
             notes,
             fire_wall_group_id,
         }
@@ -83,7 +71,7 @@ impl FireWallCommandFactory {
     ) -> DeleteFirewallRule {
         DeleteFirewallRule {
             fire_wall_group_id,
-            fire_wall_rule_id,
+            fire_wall_rule_id: Some(fire_wall_rule_id),
         }
     }
     pub fn get_firewall_rule(fire_wall_group_id: Uuid, fire_wall_rule_id: i64) -> GetFirewallRule {
@@ -94,7 +82,7 @@ impl FireWallCommandFactory {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateFirewallGroup {
     description: String,
 }
@@ -105,42 +93,30 @@ pub struct ListFirewallGroup;
 pub struct GetFirewallGroup {
     id: Uuid,
 }
-#[derive(Serialize)]
+impl GetFirewallGroup {
+    pub fn new(id: Uuid) -> Self {
+        Self { id }
+    }
+}
+#[derive(Serialize, Deserialize)]
 pub struct UpdateFirewallGroup {
-    id: Uuid,
+    pub id: Option<Uuid>,
     description: String,
 }
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DeleteFirewallGroup {
-    id: Uuid,
+    // This id can be None if the id is not assigned yet
+    pub id: Option<Uuid>,
 }
-#[derive(Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum IpType {
-    V4,
-    V6,
-}
-#[derive(Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Protocol {
-    Icmp,
-    Tcp,
-    Udp,
-    Gre,
-    Esp,
-    Ah,
-}
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateFirewallRule {
     #[serde(skip_serializing)]
-    fire_wall_group_id: Uuid,
-
+    fire_wall_group_id: Uuid, // Use id as path parameter
     ip_type: IpType,
     protocol: Protocol,
     port: String,
     subnet: String,
     subnet_size: i64,
-    source: String,
     notes: String,
 }
 
@@ -149,10 +125,11 @@ pub struct ListFirewallRule {
     fire_wall_group_id: Uuid,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DeleteFirewallRule {
     fire_wall_group_id: Uuid,
-    fire_wall_rule_id: i64,
+    // This id can be None if the id is not assigned yet
+    pub fire_wall_rule_id: Option<i64>,
 }
 
 #[derive(Serialize)]
@@ -162,58 +139,62 @@ pub struct GetFirewallRule {
 }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for CreateFirewallGroup {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<FirewallGroup, ServiceError> {
+impl ExecuteVultrCreateCommand for CreateFirewallGroup {
+    async fn execute(self, vultr_client: &VultrClient) -> Result<Value, ServiceError> {
         let response = vultr_client
             .build_request(Method::POST, "firewalls".to_string())
             .json(&serde_json::json!(self))
             .send()
             .await?;
-        extract_schema_from_response::<FirewallGroup>(response, "firewall_group").await
+        extract_schema_from_response::<Value>(response, "firewall_group").await
     }
 }
 
-#[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for ListFirewallGroup {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<Vec<FirewallGroup>, ServiceError> {
-        let response = vultr_client
-            .build_request(Method::GET, "firewalls".to_string())
-            .send()
-            .await?;
-        extract_schema_from_response::<Vec<FirewallGroup>>(response, "firewall_groups").await
-    }
-}
+// #[allow(refining_impl_trait)]
+// impl ExecuteVultrCommand for ListFirewallGroup {
+//     async fn execute<'a>(self, vultr_client: &'a VultrClient, id_store: &'a mut HashMap<i64, String>) -> Result<Vec<FirewallGroup>, ServiceError> {
+//         let response = vultr_client
+//             .build_request(Method::GET, "firewalls".to_string())
+//             .send()
+//             .await?;
+//         extract_schema_from_response::<Vec<FirewallGroup>>(response, "firewall_groups").await
+//     }
+// }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for GetFirewallGroup {
+impl ExecuteVultrGetCommand for GetFirewallGroup {
     async fn execute(self, vultr_client: &VultrClient) -> Result<FirewallGroup, ServiceError> {
         let response = vultr_client
             .build_request(Method::GET, format!("firewalls/{}", self.id))
             .send()
             .await?;
-        println!("{:?}", response);
         extract_schema_from_response::<FirewallGroup>(response, "firewall_group").await
     }
 }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for UpdateFirewallGroup {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
+impl ExecuteVultrUpdateCommand for UpdateFirewallGroup {
+    async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
+        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::PUT, format!("firewalls/{}", self.id))
+            .build_request(Method::PUT, format!("firewalls/{}", id))
             .json(&serde_json::json!(self))
             .send()
             .await?;
 
-        Ok(())
+        Ok(None)
+    }
+    fn get_id(&self) -> Option<Uuid> {
+        self.id
     }
 }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for DeleteFirewallGroup {
+impl ExecuteVultrDeleteCommand for DeleteFirewallGroup {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
+        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::DELETE, format!("firewalls/{}", self.id))
+            .build_request(Method::DELETE, format!("firewalls/{}", id))
             .send()
             .await?;
 
@@ -222,8 +203,8 @@ impl ExecuteVultrCommand for DeleteFirewallGroup {
 }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for CreateFirewallRule {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<FirewallRule, ServiceError> {
+impl ExecuteVultrCreateCommand for CreateFirewallRule {
+    async fn execute(self, vultr_client: &VultrClient) -> Result<Value, ServiceError> {
         let response = vultr_client
             .build_request(
                 Method::POST,
@@ -233,34 +214,37 @@ impl ExecuteVultrCommand for CreateFirewallRule {
             .send()
             .await?;
 
-        extract_schema_from_response::<FirewallRule>(response, "firewall_rule").await
+        extract_schema_from_response::<Value>(response, "firewall_rule").await
     }
 }
 
-#[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for ListFirewallRule {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<Vec<FirewallRule>, ServiceError> {
-        let response = vultr_client
-            .build_request(
-                Method::GET,
-                format!("firewalls/{}/rules", self.fire_wall_group_id),
-            )
-            .send()
-            .await?;
+// #[allow(refining_impl_trait)]
+// impl ExecuteVultrCommand for ListFirewallRule {
+//     async fn execute<'a>(self, vultr_client: &'a VultrClient, id_store: &'a mut HashMap<i64, String>) -> Result<Vec<FirewallRule>, ServiceError> {
+//         let response = vultr_client
+//             .build_request(
+//                 Method::GET,
+//                 format!("firewalls/{}/rules", self.fire_wall_group_id),
+//             )
+//             .send()
+//             .await?;
 
-        extract_schema_from_response::<Vec<FirewallRule>>(response, "firewall_rules").await
-    }
-}
+//         extract_schema_from_response::<Vec<FirewallRule>>(response, "firewall_rules").await
+//     }
+// }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for DeleteFirewallRule {
+impl ExecuteVultrDeleteCommand for DeleteFirewallRule {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
+        let fire_wall_rule_id = self
+            .fire_wall_rule_id
+            .ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
             .build_request(
                 Method::DELETE,
                 format!(
                     "firewalls/{}/rules/{}",
-                    self.fire_wall_group_id, self.fire_wall_rule_id
+                    self.fire_wall_group_id, fire_wall_rule_id
                 ),
             )
             .send()
@@ -270,131 +254,20 @@ impl ExecuteVultrCommand for DeleteFirewallRule {
     }
 }
 
-#[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for GetFirewallRule {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<FirewallRule, ServiceError> {
-        let response = vultr_client
-            .build_request(
-                Method::GET,
-                format!(
-                    "firewalls/{}/rules/{}",
-                    self.fire_wall_group_id, self.fire_wall_rule_id
-                ),
-            )
-            .send()
-            .await?;
+// #[allow(refining_impl_trait)]
+// impl ExecuteVultrCommand for GetFirewallRule {
+//     async fn execute<'a>(self, vultr_client: &'a VultrClient, id_store: &'a mut HashMap<i64, String>) -> Result<FirewallRule, ServiceError> {
+//         let response = vultr_client
+//             .build_request(
+//                 Method::GET,
+//                 format!(
+//                     "firewalls/{}/rules/{}",
+//                     self.fire_wall_group_id, self.fire_wall_rule_id
+//                 ),
+//             )
+//             .send()
+//             .await?;
 
-        extract_schema_from_response::<FirewallRule>(response, "firewall_rule").await
-    }
-}
-
-// #[cfg(test)]
-// mod tests {
-//     use std::str::FromStr;
-
-//     use super::*;
-//     use crate::adapter::request_dispensor::vultr::get_vultr_client;
-//     use crate::config::get_config;
-
-//     #[tokio::test]
-//     async fn test_create_firewall_group() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_group = FireWallCommandFactory::create_firewall_group("test".to_string())
-//             .execute(&vultr_client)
-//             .await
-//             .unwrap();
-//         println!("{:?}", firewall_group);
-//     }
-
-//     #[tokio::test]
-//     async fn test_list_firewall_group() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_groups = FireWallCommandFactory::list_firewall_group()
-//             .execute(&vultr_client)
-//             .await
-//             .unwrap();
-//         println!("{:?}", firewall_groups);
-//     }
-
-//     #[tokio::test]
-//     async fn test_get_firewall_group() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_group = FireWallCommandFactory::get_firewall_group(
-//             Uuid::from_str("21264f8b-c28d-4e82-83b7-3ad0b4b953ec").unwrap(),
-//         )
-//         .execute(&vultr_client)
-//         .await
-//         .unwrap();
-//         println!("{:?}", firewall_group);
-//     }
-
-//     #[tokio::test]
-//     async fn test_update_firewall_group() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_group =
-//             FireWallCommandFactory::update_firewall_group(Uuid::new_v4(), "test".to_string())
-//                 .execute(&vultr_client)
-//                 .await
-//                 .unwrap();
-//         println!("{:?}", firewall_group);
-//     }
-
-//     #[tokio::test]
-//     async fn test_delete_firewall_group() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_group = FireWallCommandFactory::delete_firewall_group(Uuid::new_v4())
-//             .execute(&vultr_client)
-//             .await
-//             .unwrap();
-//         println!("{:?}", firewall_group);
-//     }
-
-//     #[tokio::test]
-//     async fn test_create_firewall_rule() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_rule = FireWallCommandFactory::create_firewall_rule(
-//             Uuid::new_v4(),
-//             IpType::V4,
-//             Protocol::Tcp,
-//             "80".to_string(),
-//             "0.0.0.0/0".to_string(),
-//             32,
-//             "192.168.1.1".to_string(),
-//             "test".to_string(),
-//         )
-//         .execute(&vultr_client)
-//         .await
-//         .unwrap();
-//         println!("{:?}", firewall_rule);
-//     }
-
-//     #[tokio::test]
-//     async fn test_list_firewall_rule() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_rules = FireWallCommandFactory::list_firewall_rule(Uuid::new_v4())
-//             .execute(&vultr_client)
-//             .await
-//             .unwrap();
-//         println!("{:?}", firewall_rules);
-//     }
-
-//     #[tokio::test]
-//     async fn test_delete_firewall_rule() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_rule = FireWallCommandFactory::delete_firewall_rule(Uuid::new_v4(), 1)
-//             .execute(&vultr_client)
-//             .await
-//             .unwrap();
-//         println!("{:?}", firewall_rule);
-//     }
-
-//     #[tokio::test]
-//     async fn test_get_firewall_rule() {
-//         let vultr_client = get_vultr_client(&get_config().vultr_api_key);
-//         let firewall_rule = FireWallCommandFactory::get_firewall_rule(Uuid::new_v4(), 1)
-//             .execute(&vultr_client)
-//             .await
-//             .unwrap();
-//         println!("{:?}", firewall_rule);
+//         extract_schema_from_response::<FirewallRule>(response, "firewall_rule").await
 //     }
 // }

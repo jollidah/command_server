@@ -3,70 +3,20 @@ use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
 
+use super::extract_schema_from_response;
 use crate::{
-    adapter::request_dispensor::vultr::{interfaces::ExecuteVultrCommand, VultrClient},
+    adapter::request_dispensor::vultr::{
+        interfaces::{
+            ExecuteVultrCreateCommand, ExecuteVultrDeleteCommand, ExecuteVultrUpdateCommand,
+        },
+        VultrClient,
+    },
+    domain::project::enums::DatabaseEngine,
     errors::ServiceError,
 };
-
-use super::extract_schema_from_response;
-
-#[derive(Serialize, Deserialize)]
-pub struct ManagedDatabase {
-    id: Uuid,
-    date_created: DateTime<Utc>,
-    plan: String,
-    plan_disk: i64,
-    plan_ram: i64,
-    plan_vcpus: i64,
-    plan_replicas: i64,
-    region: String,
-    database_engine: String,
-    database_engine_version: i64,
-    vpc_id: Uuid,
-    status: String,
-    label: String,
-    tag: String,
-    dbname: String,
-    host: String,
-    public_host: String,
-    user: String,
-    password: String,
-    port: i64,
-    maintenance_dow: String,
-    maintenance_time: String,
-    latest_backup: String,
-    trusted_ips: Vec<String>,
-    mysql_sql_modes: Vec<String>,
-    mysql_require_primary_key: bool,
-    mysql_slow_query_log: bool,
-    cluster_time_zone: String,
-    read_replicas: Vec<String>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct DatabasePlan {
-    id: String,
-    number_of_nodes: i64,
-    #[serde(rename = "type")]
-    database_type: String,
-    vcpu_count: i64,
-    ram: i64,
-    disk: i64,
-    monthly_cost: i64,
-    supported_engines: HashMap<DatabaseEngine, bool>,
-    max_connections: HashMap<DatabaseEngine, i64>,
-    locations: Vec<String>,
-}
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum DatabaseEngine {
-    Mysql,
-    Pg,
-    Valkey,
-    Kafka,
-}
 
 pub struct ManagedDatabaseCommandFactory;
 impl ManagedDatabaseCommandFactory {
@@ -91,29 +41,25 @@ impl ManagedDatabaseCommandFactory {
             label,
         }
     }
-    pub fn get_managed_database(database_id: Uuid) -> GetManagedDatabase {
-        GetManagedDatabase { database_id }
+    pub fn get_managed_database(id: Uuid) -> GetManagedDatabase {
+        GetManagedDatabase { id }
     }
-    pub fn update_managed_database(
-        database_id: Uuid,
-        plan: String,
-        label: String,
-    ) -> UpdateManagedDatabase {
+    pub fn update_managed_database(id: Uuid, plan: String, label: String) -> UpdateManagedDatabase {
         UpdateManagedDatabase {
-            database_id,
+            id: Some(id),
             plan,
             label,
         }
     }
-    pub fn delete_managed_database(database_id: Uuid) -> DeleteManagedDatabase {
-        DeleteManagedDatabase { database_id }
+    pub fn delete_managed_database(id: Uuid) -> DeleteManagedDatabase {
+        DeleteManagedDatabase { id: Some(id) }
     }
 }
 #[derive(Serialize)]
 pub struct ListManagedDatabasePlans;
 #[derive(Serialize)]
 pub struct ListManagedDatabase;
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct CreateManagedDatabase {
     database_engine: DatabaseEngine,
     database_engine_version: i64,
@@ -123,85 +69,88 @@ pub struct CreateManagedDatabase {
 }
 #[derive(Serialize)]
 pub struct GetManagedDatabase {
-    database_id: Uuid,
+    id: Uuid, // Use id as path parameter
 }
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UpdateManagedDatabase {
     #[serde(skip_serializing)]
-    database_id: Uuid,
+    pub id: Option<Uuid>, // Use id as path parameter
     plan: String,
     label: String,
 }
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DeleteManagedDatabase {
-    database_id: Uuid,
+    // This id can be None if the id is not assigned yet
+    pub id: Option<Uuid>,
 }
-#[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for ListManagedDatabasePlans {
-    async fn execute(
-        self,
-        vultr_client: &VultrClient,
-    ) -> Result<Vec<ManagedDatabase>, ServiceError> {
-        let response = vultr_client
-            .build_request(Method::GET, "databases/plans".to_string())
-            .send()
-            .await?;
-        extract_schema_from_response::<Vec<ManagedDatabase>>(response, "plans").await
-    }
-}
+// #[allow(refining_impl_trait)]
+// impl ExecuteVultrCommand for ListManagedDatabasePlans {
+//     async fn execute<'a>(self, vultr_client: &'a VultrClient, id_store: &'a mut HashMap<i64, String>) -> Result<Vec<ManagedDatabase>, ServiceError> {
+//         let response = vultr_client
+//             .build_request(Method::GET, "databases/plans".to_string())
+//             .send()
+//             .await?;
+//         extract_schema_from_response::<Vec<ManagedDatabase>>(response, "plans").await
+//     }
+// }
+
+// #[allow(refining_impl_trait)]
+// impl ExecuteVultrCommand for ListManagedDatabase {
+//     async fn execute<'a>(self, vultr_client: &'a VultrClient, id_store: &'a mut HashMap<i64, String>) -> Result<Vec<ManagedDatabase>, ServiceError> {
+//         let response = vultr_client
+//             .build_request(Method::GET, "databases".to_string())
+//             .send()
+//             .await?;
+//         extract_schema_from_response::<Vec<ManagedDatabase>>(response, "databases").await
+//     }
+// }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for ListManagedDatabase {
-    async fn execute(
-        self,
-        vultr_client: &VultrClient,
-    ) -> Result<Vec<ManagedDatabase>, ServiceError> {
-        let response = vultr_client
-            .build_request(Method::GET, "databases".to_string())
-            .send()
-            .await?;
-        extract_schema_from_response::<Vec<ManagedDatabase>>(response, "databases").await
-    }
-}
-
-#[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for CreateManagedDatabase {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<ManagedDatabase, ServiceError> {
+impl ExecuteVultrCreateCommand for CreateManagedDatabase {
+    async fn execute(self, vultr_client: &VultrClient) -> Result<Value, ServiceError> {
         let response = vultr_client
             .build_request(Method::POST, "databases".to_string())
             .send()
             .await?;
-        extract_schema_from_response::<ManagedDatabase>(response, "database").await
+        extract_schema_from_response::<Value>(response, "database").await
     }
 }
 
+// #[allow(refining_impl_trait)]
+// impl ExecuteVultrCommand for GetManagedDatabase {
+//     async fn execute<'a>(self, vultr_client: &'a VultrClient, id_store: &'a mut HashMap<i64, String>) -> Result<ManagedDatabase, ServiceError> {
+//         let response = vultr_client
+//             .build_request(Method::GET, format!("databases/{}", self.id))
+//             .send()
+//             .await?;
+//         extract_schema_from_response::<ManagedDatabase>(response, "database").await
+//     }
+// }
+
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for GetManagedDatabase {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<ManagedDatabase, ServiceError> {
+impl ExecuteVultrUpdateCommand for UpdateManagedDatabase {
+    async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
+        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         let response = vultr_client
-            .build_request(Method::GET, format!("databases/{}", self.database_id))
+            .build_request(Method::PUT, format!("databases/{}", id))
             .send()
             .await?;
-        extract_schema_from_response::<ManagedDatabase>(response, "database").await
+        Ok(Some(
+            extract_schema_from_response::<Value>(response, "database").await?,
+        ))
+    }
+
+    fn get_id(&self) -> Option<Uuid> {
+        self.id
     }
 }
 
 #[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for UpdateManagedDatabase {
-    async fn execute(self, vultr_client: &VultrClient) -> Result<ManagedDatabase, ServiceError> {
-        let response = vultr_client
-            .build_request(Method::PUT, format!("databases/{}", self.database_id))
-            .send()
-            .await?;
-        extract_schema_from_response::<ManagedDatabase>(response, "database").await
-    }
-}
-
-#[allow(refining_impl_trait)]
-impl ExecuteVultrCommand for DeleteManagedDatabase {
+impl ExecuteVultrDeleteCommand for DeleteManagedDatabase {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
+        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::DELETE, format!("databases/{}", self.database_id))
+            .build_request(Method::DELETE, format!("databases/{}", id))
             .send()
             .await?;
         Ok(())

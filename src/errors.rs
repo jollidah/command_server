@@ -4,7 +4,7 @@ use std::fmt::Debug;
 pub enum ServiceError {
     _InternalServerError,
     DatabaseConnectionError(Box<dyn Debug + Send>),
-    RowNotFound,
+    NotFound,
     KVStoreError(Box<dyn Debug + Send>),
     ParsingError(Box<dyn Debug + Send>),
     EmailError(Box<dyn Debug + Send>),

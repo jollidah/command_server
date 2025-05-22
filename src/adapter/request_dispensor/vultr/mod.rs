@@ -1,8 +1,5 @@
-use crate::errors::ServiceError;
-use interfaces::ExecuteVultrCommand;
 use reqwest::{Client, Method, RequestBuilder};
 use schemas::BASE_URL;
-use serde::Deserialize;
 use std::sync::OnceLock;
 
 use super::get_client;
@@ -30,13 +27,6 @@ impl VultrClient {
         self.client
             .request(method, url)
             .bearer_auth(self.api_key.as_str())
-    }
-
-    pub async fn execute_command(
-        &self,
-        command: impl ExecuteVultrCommand,
-    ) -> Result<impl Deserialize, ServiceError> {
-        command.execute(self).await
     }
 }
 

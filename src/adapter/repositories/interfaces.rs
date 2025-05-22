@@ -10,4 +10,5 @@ pub trait TExecutor {
     fn begin(&mut self) -> impl std::future::Future<Output = Result<(), ServiceError>>;
     fn commit(&mut self) -> impl std::future::Future<Output = Result<(), ServiceError>>;
     fn close(&mut self) -> impl std::future::Future<Output = ()>;
+    fn rollback(&mut self) -> impl std::future::Future<Output = Result<(), ServiceError>>;
 }

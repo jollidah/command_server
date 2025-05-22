@@ -1,0 +1,92 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            project_id,\n            region_id,\n            id,\n            status,\n            plan,\n            database_engine as \"database_engine:_\",\n            database_engine_version,\n            latest_backup,\n            label,\n            x,\n            y\n        FROM managed_database \n        WHERE project_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "region_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "status",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "plan",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "database_engine:_",
+        "type_info": {
+          "Custom": {
+            "name": "database_engine",
+            "kind": {
+              "Enum": [
+                "mysql",
+                "pg"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "database_engine_version",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "latest_backup",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "label",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "x",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "y",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "889824d409c56a5dae10c9680e49f855ee358bb9bc8e43815592a71b86e79f2e"
+}

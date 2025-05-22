@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            project_id,\n            id,\n            action,\n            port,\n            ip_type as \"ip_type:_\",\n            protocol as \"protocol:_\",\n            subnet,\n            subnet_size,\n            notes,\n            x,\n            y\n        FROM firewall_rule \n        WHERE project_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "project_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "action",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "port",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "ip_type:_",
+        "type_info": {
+          "Custom": {
+            "name": "ip_type",
+            "kind": {
+              "Enum": [
+                "v4",
+                "v6"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "protocol:_",
+        "type_info": {
+          "Custom": {
+            "name": "protocol",
+            "kind": {
+              "Enum": [
+                "icmp",
+                "tcp",
+                "udp",
+                "gre",
+                "esp",
+                "ah"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 6,
+        "name": "subnet",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "subnet_size",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "notes",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 9,
+        "name": "x",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 10,
+        "name": "y",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8af7b6dbe4d8ad870587b46c0c948e2b0b702c84563c0274245ec8efbaa6b658"
+}

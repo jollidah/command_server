@@ -1,7 +1,6 @@
 use rocksdb::DB;
 use std::sync::{Arc, LazyLock};
 use tokio::sync::Mutex;
-use uuid::Uuid;
 
 use crate::{
     config::get_config,
@@ -9,7 +8,7 @@ use crate::{
     errors::ServiceError,
 };
 
-use super::interfaces::{KVStore, SessionStore, VultrKeyPairStore};
+use super::interfaces::{KVStore, VultrKeyPairStore};
 
 pub(crate) struct RocksDB {
     pub(crate) db: Mutex<DB>,
@@ -46,7 +45,7 @@ impl KVStore for RocksDB {
         let db = self.db.lock().await;
         db.get(key)
             .map_err(|err| ServiceError::KVStoreError(Box::new(err)))?
-            .ok_or_else(|| ServiceError::KVStoreError(Box::new("Value not found")))
+            .ok_or(ServiceError::NotFound)
     }
 
     async fn pop(&self, key: &[u8]) -> Result<Vec<u8>, ServiceError> {
@@ -81,70 +80,73 @@ impl VultrKeyPairStore for RocksDB {
     }
 }
 
-impl SessionStore for RocksDB {
-    fn extract_user_ids_from_session(
-        session_value: Option<Vec<u8>>,
-    ) -> Result<Vec<String>, ServiceError> {
-        Ok(match session_value {
-            Some(value) => {
-                let value_str = String::from_utf8(value)
-                    .map_err(|err| ServiceError::ParsingError(Box::new(err)))?;
-                value_str.split(',').map(String::from).collect()
-            }
-            None => vec![],
-        })
-    }
+// // 마지막 아키텍처 상태를 저장
+// // 현재 어디까지 왔는지
 
-    async fn add_user_to_session(
-        &self,
-        project_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<(), ServiceError> {
-        let session_name = format!("session-{}", project_id);
-        let db = self.db.lock().await;
-        let mut user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
+// impl SessionStore for RocksDB {
+//     fn extract_user_ids_from_session(
+//         session_value: Option<Vec<u8>>,
+//     ) -> Result<Vec<String>, ServiceError> {
+//         Ok(match session_value {
+//             Some(value) => {
+//                 let value_str = String::from_utf8(value)
+//                     .map_err(|err| ServiceError::ParsingError(Box::new(err)))?;
+//                 value_str.split(',').map(String::from).collect()
+//             }
+//             None => vec![],
+//         })
+//     }
 
-        let user_id_str = user_id.to_string();
-        user_id_list.push(user_id_str);
-        db.put(session_name, user_id_list.join(","))?;
-        Ok(())
-    }
+//     async fn add_user_to_session(
+//         &self,
+//         project_id: Uuid,
+//         user_id: Uuid,
+//     ) -> Result<(), ServiceError> {
+//         let session_name = format!("session-{}", project_id);
+//         let db = self.db.lock().await;
+//         let mut user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
 
-    async fn remove_user_from_session(
-        &self,
-        project_id: Uuid,
-        user_id: Uuid,
-    ) -> Result<(), ServiceError> {
-        let session_name = format!("session-{}", project_id);
-        let db = self.db.lock().await;
-        let mut user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
-        let user_id_str = user_id.to_string();
-        user_id_list.remove(
-            user_id_list
-                .iter()
-                .position(|id| id == &user_id_str)
-                .ok_or(ServiceError::KVStoreError(Box::new(
-                    "User not found in session",
-                )))?,
-        );
-        if user_id_list.is_empty() {
-            db.delete(&session_name)?;
-        } else {
-            db.put(session_name, user_id_list.join(","))?;
-        }
-        Ok(())
-    }
+//         let user_id_str = user_id.to_string();
+//         user_id_list.push(user_id_str);
+//         db.put(session_name, user_id_list.join(","))?;
+//         Ok(())
+//     }
 
-    async fn get_user_ids_from_session(&self, project_id: Uuid) -> Result<Vec<Uuid>, ServiceError> {
-        let session_name = format!("session-{}", project_id);
-        let db = self.db.lock().await;
-        let user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
-        Ok(user_id_list
-            .iter()
-            .map(|id| Uuid::parse_str(id).unwrap())
-            .collect())
-    }
-}
+//     async fn remove_user_from_session(
+//         &self,
+//         project_id: Uuid,
+//         user_id: Uuid,
+//     ) -> Result<(), ServiceError> {
+//         let session_name = format!("session-{}", project_id);
+//         let db = self.db.lock().await;
+//         let mut user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
+//         let user_id_str = user_id.to_string();
+//         user_id_list.remove(
+//             user_id_list
+//                 .iter()
+//                 .position(|id| id == &user_id_str)
+//                 .ok_or(ServiceError::KVStoreError(Box::new(
+//                     "User not found in session",
+//                 )))?,
+//         );
+//         if user_id_list.is_empty() {
+//             db.delete(&session_name)?;
+//         } else {
+//             db.put(session_name, user_id_list.join(","))?;
+//         }
+//         Ok(())
+//     }
+
+//     async fn get_user_ids_from_session(&self, project_id: Uuid) -> Result<Vec<Uuid>, ServiceError> {
+//         let session_name = format!("session-{}", project_id);
+//         let db = self.db.lock().await;
+//         let user_id_list = RocksDB::extract_user_ids_from_session(db.get(&session_name)?)?;
+//         Ok(user_id_list
+//             .iter()
+//             .map(|id| Uuid::parse_str(id).unwrap())
+//             .collect())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -222,7 +224,7 @@ mod tests {
         );
         assert!(matches!(
             rocks_db.get(unknown_key).await.unwrap_err(),
-            ServiceError::KVStoreError(_)
+            ServiceError::NotFound
         ));
     }
 
@@ -250,7 +252,7 @@ mod tests {
         rocks_db.delete(key).await.unwrap();
         assert!(matches!(
             rocks_db.get(key).await.unwrap_err(),
-            ServiceError::KVStoreError(_)
+            ServiceError::NotFound
         ));
     }
 
@@ -273,125 +275,125 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn test_add_user_to_session() {
-        // GIVEN
-        tear_down().await;
+    // #[tokio::test]
+    // async fn test_add_user_to_session() {
+    //     // GIVEN
+    //     tear_down().await;
 
-        let rocks_db = get_rocks_db().await;
-        let project_id = Uuid::new_v4();
-        println!("project_id: {}", project_id);
-        let user_id = Uuid::new_v4();
+    //     let rocks_db = get_rocks_db().await;
+    //     let project_id = Uuid::new_v4();
+    //     println!("project_id: {}", project_id);
+    //     let user_id = Uuid::new_v4();
 
-        // WHEN
-        rocks_db
-            .add_user_to_session(project_id, user_id)
-            .await
-            .unwrap();
+    //     // WHEN
+    //     rocks_db
+    //         .add_user_to_session(project_id, user_id)
+    //         .await
+    //         .unwrap();
 
-        // THEN
-        let session_name = format!("session-{}", project_id);
-        let user_id_list = RocksDB::extract_user_ids_from_session(
-            rocks_db.db.lock().await.get(&session_name).unwrap(),
-        )
-        .unwrap();
+    //     // THEN
+    //     let session_name = format!("session-{}", project_id);
+    //     let user_id_list = RocksDB::extract_user_ids_from_session(
+    //         rocks_db.db.lock().await.get(&session_name).unwrap(),
+    //     )
+    //     .unwrap();
 
-        assert!(
-            user_id_list.contains(&user_id.to_string()),
-            "User ID not found in session"
-        );
-    }
+    //     assert!(
+    //         user_id_list.contains(&user_id.to_string()),
+    //         "User ID not found in session"
+    //     );
+    // }
 
-    #[tokio::test]
-    async fn test_remove_user_from_session() {
-        // GIVEN
-        tear_down().await;
+    // #[tokio::test]
+    // async fn test_remove_user_from_session() {
+    //     // GIVEN
+    //     tear_down().await;
 
-        let rocks_db = get_rocks_db().await;
-        let project_id = Uuid::new_v4();
-        let user_id = Uuid::new_v4();
-        let another_user_id = Uuid::new_v4();
+    //     let rocks_db = get_rocks_db().await;
+    //     let project_id = Uuid::new_v4();
+    //     let user_id = Uuid::new_v4();
+    //     let another_user_id = Uuid::new_v4();
 
-        // Add two users to session
-        rocks_db
-            .add_user_to_session(project_id, user_id)
-            .await
-            .unwrap();
-        rocks_db
-            .add_user_to_session(project_id, another_user_id)
-            .await
-            .unwrap();
+    //     // Add two users to session
+    //     rocks_db
+    //         .add_user_to_session(project_id, user_id)
+    //         .await
+    //         .unwrap();
+    //     rocks_db
+    //         .add_user_to_session(project_id, another_user_id)
+    //         .await
+    //         .unwrap();
 
-        // WHEN
-        // Remove the first user
-        rocks_db
-            .remove_user_from_session(project_id, user_id)
-            .await
-            .unwrap();
+    //     // WHEN
+    //     // Remove the first user
+    //     rocks_db
+    //         .remove_user_from_session(project_id, user_id)
+    //         .await
+    //         .unwrap();
 
-        // THEN
-        // Check that the session still exists with the second user
-        let session_name = format!("session-{}", project_id);
-        let user_id_list = RocksDB::extract_user_ids_from_session(
-            rocks_db.db.lock().await.get(&session_name).unwrap(),
-        )
-        .unwrap();
-        assert!(
-            user_id_list.contains(&another_user_id.to_string()),
-            "Second user ID not found in session"
-        );
+    //     // THEN
+    //     // Check that the session still exists with the second user
+    //     let session_name = format!("session-{}", project_id);
+    //     let user_id_list = RocksDB::extract_user_ids_from_session(
+    //         rocks_db.db.lock().await.get(&session_name).unwrap(),
+    //     )
+    //     .unwrap();
+    //     assert!(
+    //         user_id_list.contains(&another_user_id.to_string()),
+    //         "Second user ID not found in session"
+    //     );
 
-        // WHEN
-        // Remove the second user
-        rocks_db
-            .remove_user_from_session(project_id, another_user_id)
-            .await
-            .unwrap();
+    //     // WHEN
+    //     // Remove the second user
+    //     rocks_db
+    //         .remove_user_from_session(project_id, another_user_id)
+    //         .await
+    //         .unwrap();
 
-        // THEN
-        // Check that the session is deleted
-        // assert!(db.get(&session_name).unwrap().is_none(), "Session still exists");
-    }
+    //     // THEN
+    //     // Check that the session is deleted
+    //     // assert!(db.get(&session_name).unwrap().is_none(), "Session still exists");
+    // }
 
-    #[tokio::test]
-    async fn test_get_user_ids_from_session() {
-        // GIVEN
-        tear_down().await;
+    // #[tokio::test]
+    // async fn test_get_user_ids_from_session() {
+    //     // GIVEN
+    //     tear_down().await;
 
-        let rocks_db = get_rocks_db().await;
-        let project_id = Uuid::new_v4();
-        let user_id = Uuid::new_v4();
-        let another_user_id = Uuid::new_v4();
+    //     let rocks_db = get_rocks_db().await;
+    //     let project_id = Uuid::new_v4();
+    //     let user_id = Uuid::new_v4();
+    //     let another_user_id = Uuid::new_v4();
 
-        // Add users to session
-        rocks_db
-            .add_user_to_session(project_id, user_id)
-            .await
-            .unwrap();
-        rocks_db
-            .add_user_to_session(project_id, another_user_id)
-            .await
-            .unwrap();
+    //     // Add users to session
+    //     rocks_db
+    //         .add_user_to_session(project_id, user_id)
+    //         .await
+    //         .unwrap();
+    //     rocks_db
+    //         .add_user_to_session(project_id, another_user_id)
+    //         .await
+    //         .unwrap();
 
-        // WHEN
-        let user_id_list = rocks_db
-            .get_user_ids_from_session(project_id)
-            .await
-            .unwrap();
+    //     // WHEN
+    //     let user_id_list = rocks_db
+    //         .get_user_ids_from_session(project_id)
+    //         .await
+    //         .unwrap();
 
-        // THEN
-        assert!(
-            user_id_list.contains(&user_id),
-            "User ID not found in session"
-        );
-        assert!(
-            user_id_list.contains(&another_user_id),
-            "Another user ID not found in session"
-        );
-        assert_eq!(
-            user_id_list.len(),
-            2,
-            "Unexpected number of user IDs in session"
-        );
-    }
+    //     // THEN
+    //     assert!(
+    //         user_id_list.contains(&user_id),
+    //         "User ID not found in session"
+    //     );
+    //     assert!(
+    //         user_id_list.contains(&another_user_id),
+    //         "Another user ID not found in session"
+    //     );
+    //     assert_eq!(
+    //         user_id_list.len(),
+    //         2,
+    //         "Unexpected number of user IDs in session"
+    //     );
+    // }
 }

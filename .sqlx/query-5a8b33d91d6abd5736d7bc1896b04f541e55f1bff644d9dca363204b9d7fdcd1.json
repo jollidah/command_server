@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE compute\n        SET \n            plan = $1,\n            status = $2,\n            main_ip = $3,\n            label = $4,\n            os_id = $5,\n            firewall_group_id = $6,\n            auto_backups = $7,\n            x = $8,\n            y = $9\n        WHERE project_id = $10 AND id = $11\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Int8",
+        "Varchar",
+        {
+          "Custom": {
+            "name": "auto_backups",
+            "kind": {
+              "Enum": [
+                "enabled",
+                "disabled"
+              ]
+            }
+          }
+        },
+        "Int8",
+        "Int8",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5a8b33d91d6abd5736d7bc1896b04f541e55f1bff644d9dca363204b9d7fdcd1"
+}

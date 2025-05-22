@@ -301,15 +301,15 @@ mod tests {
         // THEN
         assert!(matches!(
             get_project(project.id, connection_pool()).await,
-            Err(ServiceError::RowNotFound)
+            Err(ServiceError::NotFound)
         ));
         assert!(matches!(
             get_user_role(project.id, &user_role.user_email, connection_pool()).await,
-            Err(ServiceError::RowNotFound)
+            Err(ServiceError::NotFound)
         ));
         assert!(matches!(
             get_vult_api_key(project.id, connection_pool()).await,
-            Err(ServiceError::RowNotFound)
+            Err(ServiceError::NotFound)
         ));
     }
 
@@ -458,7 +458,7 @@ mod tests {
         // THEN
         matches!(
             get_user_role(project.id, &user_account.email, connection_pool()).await,
-            Err(ServiceError::RowNotFound)
+            Err(ServiceError::NotFound)
         );
     }
 

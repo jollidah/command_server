@@ -2,10 +2,7 @@ use uuid::Uuid;
 
 use crate::{
     adapter::{
-        kv_store::{
-            interfaces::{KVStore, VultrKeyPairStore},
-            rocks_db::get_rocks_db,
-        },
+        kv_store::{interfaces::KVStore, rocks_db::get_rocks_db},
         mail::{send_email, Email, EmailType},
         repositories::{
             auth::{get_user_account_by_email, insert_user_account, update_user_account},
@@ -72,6 +69,8 @@ pub async fn handle_issue_tokens(
     let user = get_user_account_by_email(&command.email, connection_pool()).await?;
     if !user.verified {
         return Err(ServiceError::UserNotVerified);
+    } else if user.password != command.password {
+        return Err(ServiceError::Unauthorized);
     }
     ext.write().await.begin().await?;
 
@@ -98,22 +97,10 @@ pub async fn handle_refresh_tokens(
     Ok(tokens)
 }
 
-pub async fn handle_get_public_key() -> Result<String, ServiceError> {
-    let rocks_db = get_rocks_db().await;
-    let public_key = rocks_db.get_or_create_public_key().await?;
-
-    String::from_utf8(public_key.key.public_key_to_pem()?).map_err(|_| ServiceError::ParseError)
-}
-
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use crate::{
-        adapter::kv_store::rocks_db::RocksDB,
-        domain::auth::private_key::{PrivateKey, PublicKey},
-    };
     use chrono::{Duration, Utc};
-    use openssl::rsa::Padding;
 
     pub async fn create_user_account_helper() -> UserAccountAggregate {
         let cmd = CreateUserAccount {
@@ -177,7 +164,7 @@ pub(crate) mod tests {
         // THEN
         assert!(matches!(
             rocks_db.get(&cmd.email.as_bytes()).await.unwrap_err(),
-            ServiceError::KVStoreError(_)
+            ServiceError::NotFound
         ));
         let user = get_user_account_by_email(&cmd.email, connection_pool())
             .await
@@ -307,34 +294,5 @@ pub(crate) mod tests {
         assert_eq!(new_refresh_claims.user_id, initial_refresh_claims.user_id);
         assert!(new_access_claims.exp > Utc::now().timestamp());
         assert_eq!(new_tokens.refresh_token, initial_tokens.refresh_token);
-    }
-
-    #[tokio::test]
-    async fn test_get_public_key() {
-        // GIVEN
-        let rocks_db = get_rocks_db().await;
-        assert!(rocks_db.get(RocksDB::PRIVATE_KEY_NAME).await.is_err());
-        let tmp_api_key = "tmp_api_key";
-
-        let public_key_1 = handle_get_public_key().await.unwrap();
-        assert!(!public_key_1.is_empty());
-
-        // WHEN
-        let public_key = PublicKey::from_pem(&public_key_1.as_bytes()).unwrap();
-        let private_key =
-            PrivateKey::from_pem(&rocks_db.get(RocksDB::PRIVATE_KEY_NAME).await.unwrap()).unwrap();
-        let mut buf: Vec<u8> = vec![0; public_key.key.size() as usize];
-        let token_len = public_key
-            .key
-            .public_encrypt(tmp_api_key.as_bytes(), &mut buf, Padding::PKCS1)
-            .unwrap();
-
-        let public_key_2 = handle_get_public_key().await.unwrap();
-        assert!(!public_key_2.is_empty());
-
-        // THEN
-        let decoded_token = private_key.decode_data(&buf[0..token_len]).unwrap();
-        assert_eq!(public_key_1, public_key_2);
-        assert_eq!(decoded_token, tmp_api_key);
     }
 }

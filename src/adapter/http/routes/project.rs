@@ -214,10 +214,7 @@ pub fn project_router() -> Router {
         .route("/external/project/public-key", get(get_public_key))
         .route("/external/project/vult-api-key", put(register_vult_api_key))
         .route("/external/project/{project_id}/session", get(session_sse))
-        .route(
-            "/external/project/{project_id}/deploy",
-            post(deploy_project),
-        )
+        .route("/external/project/deploy", post(deploy_project))
         .route(
             "/external/project/{project_id}/architecture/suggestion",
             post(request_architecture_suggestion),

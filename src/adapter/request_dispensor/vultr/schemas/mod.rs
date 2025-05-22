@@ -10,7 +10,6 @@ pub mod managed_database;
 pub mod object_storage;
 
 pub const BASE_URL: &str = "https://api.vultr.com/v2";
-pub const MOCKING_SERVER_URL: &str = "http://localhost:3000/v2";
 
 pub async fn extract_schema_from_response<T: DeserializeOwned>(
     response: reqwest::Response,

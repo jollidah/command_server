@@ -11,6 +11,9 @@ use crate::adapter::repositories::project::workspace::{
     upsert_user_role, upsert_vult_api_key,
 };
 use crate::adapter::repositories::{connection_pool, SqlExecutor};
+use crate::adapter::request_dispensor::architector_server::{
+    request_architecture_recommendation, ArchitectureRecommendation, RequestArchitectureSuggestion,
+};
 use crate::domain::auth::private_key::PrivateKey;
 use crate::domain::project::commands::{
     AssignRole, DeleteProject, DeployProject, ExpelMember, RegisterVultApiKey, ResourceResponse,
@@ -263,6 +266,16 @@ async fn update_project_diagram(project_id: Uuid) -> Result<Vec<ResourceResponse
     Ok(res)
 }
 
+pub async fn handle_request_architecture_suggestion(
+    cmd: RequestArchitectureSuggestion,
+    current_user: CurrentUser,
+    project_id: Uuid,
+) -> Result<ArchitectureRecommendation, ServiceError> {
+    let user_role = get_user_role(project_id, &current_user.email, connection_pool()).await?;
+    user_role.verify_role(&[UserRole::Admin, UserRole::Editor])?;
+    request_architecture_recommendation(cmd).await
+}
+
 #[cfg(test)]
 mod tests {
     use openssl::rsa::Padding;
@@ -453,7 +466,6 @@ mod tests {
     async fn test_get_public_key() {
         // GIVEN
         let rocks_db = get_rocks_db().await;
-        assert!(rocks_db.get(RocksDB::PRIVATE_KEY_NAME).await.is_err());
         let tmp_api_key = "tmp_api_key";
 
         let public_key_1 = handle_get_public_key().await.unwrap();

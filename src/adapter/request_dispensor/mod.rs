@@ -1,4 +1,4 @@
-#[allow(unused)]
+pub mod architector_server;
 pub mod vultr;
 
 use reqwest::Client;

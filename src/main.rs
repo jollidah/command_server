@@ -17,7 +17,6 @@ mod domain;
 mod errors;
 mod service;
 
-#[allow(unused)]
 #[tokio::main]
 async fn main() {
     println!("Environment Variable Is Being Set...");
@@ -30,7 +29,7 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "command_server=debug,tower_http=info,axum::rejection=trace,info".into()
+                "command_server=debug,tower_http=trace,axum::rejection=trace,trace".into()
             }),
         )
         .with(tracing_subscriber::fmt::layer())

@@ -9,7 +9,12 @@ use chrono::{TimeZone, Utc};
 use uuid::Uuid;
 
 use crate::{
-    adapter::http::conversion::WebResponse,
+    adapter::{
+        http::conversion::WebResponse,
+        request_dispensor::architector_server::{
+            ArchitectureRecommendation, RequestArchitectureSuggestion,
+        },
+    },
     domain::project::commands::{
         AssignRole, CreateProject, DeleteProject, DeployProject, ExpelMember, RegisterVultApiKey,
     },
@@ -17,7 +22,7 @@ use crate::{
     service::project::{
         handle_assign_role, handle_create_project, handle_delete_project, handle_deploy_project,
         handle_expel_member, handle_get_public_key, handle_register_vultr_api_key,
-        handle_session_sse,
+        handle_request_architecture_suggestion, handle_session_sse,
     },
     CurrentUser,
 };
@@ -139,7 +144,6 @@ use std::convert::Infallible;
 #[utoipa::path(
     get,
     path = "/external/project/{project_id}/session",
-    request_body(content = (), content_type = "application/json"),
     responses(
         (status = 200, body = ())
     )
@@ -178,6 +182,26 @@ pub async fn deploy_project(
     Ok(())
 }
 
+/// Request architecture suggestion
+#[axum::debug_handler]
+#[utoipa::path(
+    post,
+    path = "/external/project/{project_id}/architecture/suggestion",
+    request_body(content = RequestArchitectureSuggestion, content_type = "application/json"),
+    responses(
+        (status = 200, body = ArchitectureRecommendation)
+    )
+)]
+pub async fn request_architecture_suggestion(
+    Extension(current_user): Extension<CurrentUser>,
+    Path(project_id): Path<Uuid>,
+    Json(cmd): Json<RequestArchitectureSuggestion>,
+) -> Result<WebResponse<ArchitectureRecommendation>, ServiceError> {
+    let architecture_recommendation =
+        handle_request_architecture_suggestion(cmd, current_user, project_id).await?;
+    Ok(WebResponse(architecture_recommendation))
+}
+
 pub fn project_router() -> Router {
     Router::new()
         .route("/external/project/role", put(assign_role))
@@ -193,6 +217,10 @@ pub fn project_router() -> Router {
         .route(
             "/external/project/{project_id}/deploy",
             post(deploy_project),
+        )
+        .route(
+            "/external/project/{project_id}/architecture/suggestion",
+            post(request_architecture_suggestion),
         )
         .route_layer(axum::middleware::from_fn(auth_middleware))
 }

@@ -24,7 +24,7 @@ pub enum Protocol {
 
 #[derive(Serialize, Deserialize, Default, Clone, Type)]
 #[sqlx(type_name = "auto_backups", rename_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "lowercase")]
 pub enum BackupStatus {
     Enabled,
     #[default]
@@ -41,7 +41,6 @@ pub enum DatabaseEngine {
 
 #[derive(Debug, Serialize, Deserialize, Type, ToSchema, Clone)]
 #[sqlx(type_name = "resource_type", rename_all = "snake_case")]
-#[serde(rename_all = "snake_case")]
 pub enum ResourceType {
     BlockStorage,
     Compute,

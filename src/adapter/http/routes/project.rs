@@ -205,19 +205,19 @@ pub async fn request_architecture_suggestion(
 pub fn project_router() -> Router {
     Router::new()
         .route("/external/project/role", put(assign_role))
+        .route("/external/project", post(create_project))
+        .route("/external/project/public-key", get(get_public_key))
+        .route("/external/project/vult-api-key", put(register_vult_api_key))
+        .route("/external/project/deploy", post(deploy_project))
         .route(
             "/external/project/{project_id}/member/{email}",
             delete(expel_member),
         )
-        .route("/external/project", post(create_project))
-        .route("/external/project/{project_id}", delete(delete_project))
-        .route("/external/project/public-key", get(get_public_key))
-        .route("/external/project/vult-api-key", put(register_vult_api_key))
-        .route("/external/project/{project_id}/session", get(session_sse))
-        .route("/external/project/deploy", post(deploy_project))
         .route(
             "/external/project/{project_id}/architecture/suggestion",
             post(request_architecture_suggestion),
         )
+        .route("/external/project/{project_id}/session", get(session_sse))
+        .route("/external/project/{project_id}", delete(delete_project))
         .route_layer(axum::middleware::from_fn(auth_middleware))
 }

@@ -273,6 +273,7 @@ pub async fn handle_request_architecture_suggestion(
 ) -> Result<ArchitectureRecommendation, ServiceError> {
     let user_role = get_user_role(project_id, &current_user.email, connection_pool()).await?;
     user_role.verify_role(&[UserRole::Admin, UserRole::Editor])?;
+    tracing::info!("Waiting for architecture recommendation...\nproject_id: {project_id}");
     request_architecture_recommendation(cmd).await
 }
 

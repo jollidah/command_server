@@ -6,8 +6,10 @@ use adapter::{
     repositories::connection_pool,
 };
 use axum::Router;
+use reqwest::Method;
 use std::{env, net::SocketAddr};
 use tokio::net::TcpListener;
+use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -29,12 +31,15 @@ async fn main() {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-                "command_server=debug,tower_http=trace,axum::rejection=trace,trace".into()
+                "command_server=debug,tower_http=debug,axum::rejection=debug,debug".into()
             }),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
-
+    let cors = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
+        .allow_headers(Any)
+        .allow_origin(Any);
     let service_routers = Router::new()
         .nest("/api/v1", auth_router())
         .nest("/api/v1", project_router());
@@ -56,6 +61,7 @@ async fn main() {
     let app = Router::new()
         .nest_service(service_name, service_routers)
         .layer(tower_http::trace::TraceLayer::new_for_http())
+        .layer(cors)
         .merge(swagger);
 
     let listener = TcpListener::bind(&env::var("SERVER_IP_PORT").unwrap_or("0.0.0.0:80".into()))

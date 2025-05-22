@@ -14,8 +14,6 @@ use crate::{
     },
 };
 
-use super::middleware::auth_middleware;
-
 /// Create User Account (Sign up)
 #[axum::debug_handler]
 #[utoipa::path(
@@ -86,14 +84,12 @@ pub async fn check_verification_email(
 }
 
 pub fn auth_router() -> Router {
-    let non_auth_router = Router::new()
+    Router::new()
         .route("/external/auth/login", post(issue_tokens))
         .route("/external/auth/refresh", post(refresh_tokens))
         .route("/external/auth/account", post(create_user_account))
         .route(
             "/external/auth/verification/check",
             post(check_verification_email),
-        );
-    let auth_router = Router::new().route_layer(axum::middleware::from_fn(auth_middleware));
-    non_auth_router.merge(auth_router)
+        )
 }

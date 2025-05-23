@@ -77,7 +77,8 @@ pub(crate) struct AssignRole {
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema)]
 pub(crate) struct RegisterVultApiKey {
     pub(crate) project_id: Uuid,
-    pub(crate) api_key: Vec<u8>,
+    pub(crate) api_key: String,
+    // pub(crate) api_key: Vec<u8>,
 }
 
 #[derive(Clone, Deserialize, Serialize, ToSchema)]

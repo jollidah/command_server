@@ -13,6 +13,9 @@ RUN cargo build --release --target x86_64-unknown-linux-musl
 # stage for backend binary
 FROM alpine:latest AS command_server
 
+# Install postgresql-client for database migrations
+RUN apk add --no-cache postgresql-client
+
 # Copy migrations
 COPY --from=builder /src/migrations /migrations
 

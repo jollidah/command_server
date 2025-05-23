@@ -48,7 +48,7 @@ pub struct DeleteFirewallGroup {
 #[derive(Serialize, Deserialize)]
 pub struct CreateFirewallRule {
     #[serde(skip_serializing)]
-    fire_wall_group_id: Uuid, // Use id as path parameter
+    firewall_group_id: Uuid, // Use id as path parameter
     ip_type: IpType,
     protocol: Protocol,
     port: String,
@@ -59,20 +59,20 @@ pub struct CreateFirewallRule {
 
 #[derive(Serialize)]
 pub struct ListFirewallRule {
-    fire_wall_group_id: Uuid,
+    firewall_group_id: Uuid,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteFirewallRule {
-    fire_wall_group_id: Uuid,
+    firewall_group_id: Uuid,
     // This id can be None if the id is not assigned yet
-    pub fire_wall_rule_id: Option<i64>,
+    pub firewall_rule_id: Option<i64>,
 }
 
 #[derive(Serialize)]
 pub struct GetFirewallRule {
-    fire_wall_group_id: Uuid,
-    fire_wall_rule_id: i64,
+    firewall_group_id: Uuid,
+    firewall_rule_id: i64,
 }
 
 #[allow(refining_impl_trait)]
@@ -131,7 +131,7 @@ impl ExecuteVultrCreateCommand for CreateFirewallRule {
         let response = vultr_client
             .build_request(
                 Method::POST,
-                format!("firewalls/{}/rules", self.fire_wall_group_id),
+                format!("firewalls/{}/rules", self.firewall_group_id),
             )
             .json(&serde_json::json!(self))
             .send()
@@ -144,15 +144,15 @@ impl ExecuteVultrCreateCommand for CreateFirewallRule {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrDeleteCommand for DeleteFirewallRule {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
-        let fire_wall_rule_id = self
-            .fire_wall_rule_id
+        let firewall_rule_id = self
+            .firewall_rule_id
             .ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
             .build_request(
                 Method::DELETE,
                 format!(
                     "firewalls/{}/rules/{}",
-                    self.fire_wall_group_id, fire_wall_rule_id
+                    self.firewall_group_id, firewall_rule_id
                 ),
             )
             .send()

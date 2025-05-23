@@ -698,7 +698,7 @@ mod tests {
                         "y": 400
                     },
                     "data": {
-                        "fire_wall_group_id": "firewall-1",
+                        "firewall_group_id": "firewall-1",
                         "ip_type": "v4",
                         "protocol": "tcp",
                         "port": "80",

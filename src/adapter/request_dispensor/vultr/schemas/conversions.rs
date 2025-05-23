@@ -4,7 +4,7 @@ use crate::errors::ServiceError;
 
 impl From<reqwest::Error> for ServiceError {
     fn from(error: reqwest::Error) -> Self {
-        tracing::error!("Request error while sending request to Vultr: {:?}", error);
+        tracing::error!("Request error while sending request: {:?}", error);
         ServiceError::RequestError(Box::new(error))
     }
 }

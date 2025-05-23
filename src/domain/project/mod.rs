@@ -8,10 +8,7 @@ use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use crate::{
-    adapter::request_dispensor::vultr::VultrClient,
-    errors::ServiceError,
-};
+use crate::{adapter::request_dispensor::vultr::VultrClient, errors::ServiceError};
 
 pub mod commands;
 pub mod diagrams;

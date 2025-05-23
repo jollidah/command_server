@@ -12,8 +12,8 @@ pub struct BlockStorage {
     pub y: i64,
     #[serde(skip)]
     pub x: i64,
-    // Vultr won't return region_id
-    pub region_id: Option<String>, // e.g."ewr"
+    // Vultr won't return region
+    pub region: Option<String>, // e.g."ewr"
     pub id: Uuid,
     pub mount_id: String,
     pub attached_to_instance: Uuid,
@@ -59,8 +59,8 @@ pub struct Compute {
     pub y: i64,
     #[serde(skip)]
     pub x: i64,
-    // Vultr won't return region_id
-    pub region_id: Option<String>,
+    // Vultr won't return region
+    pub region: Option<String>,
     // Vultr won't return auto_backups
     pub auto_backups: Option<BackupStatus>,
     pub id: Uuid,
@@ -80,8 +80,8 @@ pub struct ManagedDatabase {
     pub y: i64,
     #[serde(skip)]
     pub x: i64,
-    // Vultr won't return region_id
-    pub region_id: Option<String>, // e.g. "ewr"
+    // Vultr won't return region
+    pub region: Option<String>, // e.g. "ewr"
     pub id: Uuid,
     pub status: String,
     pub plan: String,

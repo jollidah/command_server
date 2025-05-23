@@ -16,7 +16,7 @@ pub async fn insert_block_storage(
         r#"
         INSERT INTO block_storage (
             project_id,
-            region_id,
+            region,
             id,
             mount_id,
             attached_to_instance,
@@ -27,7 +27,7 @@ pub async fn insert_block_storage(
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         "#,
         input.project_id,
-        input.region_id,
+        input.region,
         input.id,
         input.mount_id,
         input.attached_to_instance,
@@ -50,7 +50,7 @@ pub async fn update_block_storage(
         r#"
         UPDATE block_storage
         SET 
-            region_id = $1,
+            region = $1,
             mount_id = $2,
             attached_to_instance = $3,
             size_gb = $4,
@@ -59,7 +59,7 @@ pub async fn update_block_storage(
             y = $7
         WHERE project_id = $8 AND id = $9
         "#,
-        input.region_id,
+        input.region,
         input.mount_id,
         input.attached_to_instance,
         input.size_gb,
@@ -100,7 +100,7 @@ pub async fn list_block_storage(
         r#"
         SELECT
             project_id,
-            region_id,
+            region,
             id,
             mount_id,
             attached_to_instance,
@@ -295,7 +295,7 @@ pub async fn insert_compute(input: &Compute, trx: &mut PgConnection) -> Result<(
         r#"
         INSERT INTO compute (
             project_id,
-            region_id,
+            region,
             id,
             plan,
             status,
@@ -309,7 +309,7 @@ pub async fn insert_compute(input: &Compute, trx: &mut PgConnection) -> Result<(
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         "#,
         input.project_id,
-        input.region_id,
+        input.region,
         input.id,
         input.plan,
         input.status,
@@ -386,7 +386,7 @@ pub async fn list_compute(
         r#"
         SELECT
             project_id,
-            region_id,
+            region,
             id,
             plan,
             status,
@@ -415,7 +415,7 @@ pub async fn insert_managed_database(
         r#"
         INSERT INTO managed_database (
             project_id,
-            region_id,
+            region,
             id,
             status,
             plan,
@@ -428,7 +428,7 @@ pub async fn insert_managed_database(
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         "#,
         input.project_id,
-        input.region_id,
+        input.region,
         input.id,
         input.status,
         input.plan,
@@ -505,7 +505,7 @@ pub async fn list_managed_database(
         r#"
         SELECT
             project_id,
-            region_id,
+            region,
             id,
             status,
             plan,
@@ -688,7 +688,7 @@ mod tests {
             r#"
             SELECT 
                 project_id,
-                region_id,
+                region,
                 id,
                 mount_id,
                 attached_to_instance,
@@ -769,7 +769,7 @@ mod tests {
             r#"
             SELECT 
                 project_id,
-                region_id,
+                region,
                 id,
                 plan,
                 status,
@@ -800,7 +800,7 @@ mod tests {
             r#"
             SELECT 
                 project_id,
-                region_id,
+                region,
                 id,
                 status,
                 plan,
@@ -854,7 +854,7 @@ mod tests {
         let (_, project) = create_project_helper().await;
         let block_storage = BlockStorage {
             project_id: project.id,
-            region_id: Some("region1".to_string()),
+            region: Some("region1".to_string()),
             id: Uuid::new_v4(),
             mount_id: "mount1".to_string(),
             attached_to_instance: Uuid::new_v4(),
@@ -1060,7 +1060,7 @@ mod tests {
         let (_, project) = create_project_helper().await;
         let compute = Compute {
             project_id: project.id,
-            region_id: Some("region1".to_string()),
+            region: Some("region1".to_string()),
             id: Uuid::new_v4(),
             plan: "vc2-1c-1gb".to_string(),
             status: "active".to_string(),
@@ -1136,7 +1136,7 @@ mod tests {
         let (_, project) = create_project_helper().await;
         let managed_database = ManagedDatabase {
             project_id: project.id,
-            region_id: Some("region1".to_string()),
+            region: Some("region1".to_string()),
             id: Uuid::new_v4(),
             status: "active".to_string(),
             plan: "db-s-1vcpu-1gb".to_string(),
@@ -1297,7 +1297,7 @@ mod tests {
         let computes = vec![
             Compute {
                 project_id: project.id,
-                region_id: Some("region1".to_string()),
+                region: Some("region1".to_string()),
                 id: Uuid::new_v4(),
                 plan: "vc2-1c-1gb".to_string(),
                 status: "active".to_string(),
@@ -1311,7 +1311,7 @@ mod tests {
             },
             Compute {
                 project_id: project.id,
-                region_id: Some("region1".to_string()),
+                region: Some("region1".to_string()),
                 id: Uuid::new_v4(),
                 plan: "vc2-2c-2gb".to_string(),
                 status: "active".to_string(),
@@ -1354,7 +1354,7 @@ mod tests {
         let databases = vec![
             ManagedDatabase {
                 project_id: project.id,
-                region_id: Some("region1".to_string()),
+                region: Some("region1".to_string()),
                 id: Uuid::new_v4(),
                 status: "active".to_string(),
                 plan: "db-s-1vcpu-1gb".to_string(),
@@ -1367,7 +1367,7 @@ mod tests {
             },
             ManagedDatabase {
                 project_id: project.id,
-                region_id: Some("region1".to_string()),
+                region: Some("region1".to_string()),
                 id: Uuid::new_v4(),
                 status: "active".to_string(),
                 plan: "db-s-2vcpu-2gb".to_string(),
@@ -1415,7 +1415,7 @@ mod tests {
         let block_storages = vec![
             BlockStorage {
                 project_id: project.id,
-                region_id: Some("region1".to_string()),
+                region: Some("region1".to_string()),
                 id: Uuid::new_v4(),
                 mount_id: "mount1".to_string(),
                 attached_to_instance: Uuid::new_v4(),
@@ -1426,7 +1426,7 @@ mod tests {
             },
             BlockStorage {
                 project_id: project.id,
-                region_id: Some("region1".to_string()),
+                region: Some("region1".to_string()),
                 id: Uuid::new_v4(),
                 mount_id: "mount2".to_string(),
                 attached_to_instance: Uuid::new_v4(),

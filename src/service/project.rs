@@ -178,7 +178,11 @@ pub async fn handle_deploy_project(
     let vultr_client = get_vultr_client(&vultr_api_key.api_key);
     let mut vultr_execution_context = VultrExecutionContext::new(vultr_client, cmd.project_id);
 
-    match cmd.command_list.execute(&mut vultr_execution_context, trx.transaction()).await {
+    match cmd
+        .command_list
+        .execute(&mut vultr_execution_context, trx.transaction())
+        .await
+    {
         Ok(_) => {
             trx.commit().await?;
         }

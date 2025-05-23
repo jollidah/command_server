@@ -20,12 +20,12 @@ use super::extract_schema_from_response;
 pub struct ListCompute;
 #[derive(Serialize, Deserialize)]
 pub struct CreateCompute {
-    region: String,
-    plan: String,
-    label: String,
-    os_id: i64,
-    backups: BackupStatus,
-    hostname: String,
+    pub region: String,
+    pub plan: String,
+    pub label: String,
+    pub os_id: i64,
+    pub backups: BackupStatus,
+    pub hostname: String,
 }
 #[derive(Serialize, Deserialize)]
 pub struct GetCompute {
@@ -47,6 +47,11 @@ pub struct DeleteCompute {
     // This id can be None if the id is not assigned yet
     pub id: Option<Uuid>,
 }
+
+// pub struct VultrCreateCommand {
+//     pub command_type: String,  // 명령어 타입
+//     pub data: Value,  // 실제 데이터
+// }
 
 #[allow(refining_impl_trait)]
 impl ExecuteVultrCreateCommand for CreateCompute {

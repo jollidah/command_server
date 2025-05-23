@@ -177,9 +177,8 @@ pub async fn handle_deploy_project(
     let mut trx = ext.write().await;
     let vultr_client = get_vultr_client(&vultr_api_key.api_key);
     let mut vultr_execution_context = VultrExecutionContext::new(vultr_client, cmd.project_id);
-
+    let project_id = cmd.project_id;
     match cmd
-        .command_list
         .execute(&mut vultr_execution_context, trx.transaction())
         .await
     {
@@ -193,15 +192,15 @@ pub async fn handle_deploy_project(
     }
     trx.close().await;
 
-    let res = update_project_diagram(cmd.project_id).await?;
+    let res = update_project_diagram(project_id).await?;
     let rocks_db = get_rocks_db().await;
     let res_bytes = serde_json::to_vec(&res)?;
-    let key = get_diagram_update_dt(cmd.project_id);
+    let key = get_diagram_update_dt(project_id);
     rocks_db
         .insert(key.as_bytes(), Utc::now().to_rfc3339().as_bytes())
         .await?;
 
-    let key = get_diagram_key(cmd.project_id);
+    let key = get_diagram_key(project_id);
     rocks_db.insert(key.as_bytes(), &res_bytes).await?;
 
     Ok(())

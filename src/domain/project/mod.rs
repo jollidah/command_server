@@ -110,7 +110,7 @@ impl VultrExecutionContext {
             resource_map: HashMap::new(),
         }
     }
-    fn get_id_with_temp_id(&mut self, temp_id: &String) -> Result<String, ServiceError> {
+    pub fn get_id_with_temp_id(&mut self, temp_id: &String) -> Result<String, ServiceError> {
         self.resource_map
             .get(temp_id)
             .ok_or(ServiceError::NotFound)

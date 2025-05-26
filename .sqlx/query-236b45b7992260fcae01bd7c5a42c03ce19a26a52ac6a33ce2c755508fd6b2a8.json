@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            project_id,\n            region_id,\n            id,\n            mount_id,\n            attached_to_instance,\n            size_gb,\n            label,\n            x,\n            y\n        FROM block_storage \n        WHERE project_id = $1\n        ",
+  "query": "\n        SELECT\n            project_id,\n            region,\n            id,\n            mount_id,\n            attached_to_instance,\n            size_gb,\n            label,\n            x,\n            y\n        FROM block_storage \n        WHERE project_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "region_id",
+        "name": "region",
         "type_info": "Varchar"
       },
       {
@@ -66,5 +66,5 @@
       false
     ]
   },
-  "hash": "5a181520675e7f6dc55efe780824ed6b104c3987ad67ef5dfe43664e2f472060"
+  "hash": "236b45b7992260fcae01bd7c5a42c03ce19a26a52ac6a33ce2c755508fd6b2a8"
 }

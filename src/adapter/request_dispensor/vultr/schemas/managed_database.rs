@@ -28,7 +28,7 @@ pub struct CreateManagedDatabase {
 }
 #[derive(Serialize)]
 pub struct GetManagedDatabase {
-    id: Uuid, // Use id as path parameter
+    pub id: Uuid, // Use id as path parameter
 }
 #[derive(Serialize, Deserialize)]
 pub struct UpdateManagedDatabase {

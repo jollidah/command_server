@@ -14,14 +14,14 @@ use crate::adapter::repositories::{connection_pool, SqlExecutor};
 use crate::adapter::request_dispensor::architector_server::{
     request_architecture_recommendation, ArchitectureRecommendation, RequestArchitectureSuggestion,
 };
+use crate::adapter::request_dispensor::vultr::get_vultr_client;
 use crate::domain::project::commands::{
     AssignRole, DeleteProject, DeployProject, ExpelMember, RegisterVultApiKey, ResourceResponse,
-    VultrCommand,
 };
 use crate::domain::project::diagrams::{get_diagram_key, get_diagram_update_dt};
 use crate::domain::project::enums::ResourceType;
 use crate::domain::project::{commands::CreateProject, ProjectAggregate};
-use crate::domain::project::{UserRole, UserRoleEntity, VultApiKeyEntity, VultrCommandManager};
+use crate::domain::project::{UserRole, UserRoleEntity, VultApiKeyEntity, VultrExecutionContext};
 use crate::errors::ServiceError;
 use crate::CurrentUser;
 use chrono::{DateTime, Utc};
@@ -175,18 +175,13 @@ pub async fn handle_deploy_project(
     let ext = SqlExecutor::new();
     ext.write().await.begin().await?;
     let mut trx = ext.write().await;
-    let command_list = cmd
-        .command_list
-        .into_iter()
-        .map(VultrCommand::from_request)
-        .collect::<Result<Vec<_>, _>>()?;
-    let mut vultr_command_manager = VultrCommandManager::new(
-        command_list,
-        cmd.project_id,
-        vultr_api_key.api_key,
-        trx.transaction(),
-    );
-    match vultr_command_manager.execute().await {
+    let vultr_client = get_vultr_client(&vultr_api_key.api_key);
+    let mut vultr_execution_context = VultrExecutionContext::new(vultr_client, cmd.project_id);
+    let project_id = cmd.project_id;
+    match cmd
+        .execute(&mut vultr_execution_context, trx.transaction())
+        .await
+    {
         Ok(_) => {
             trx.commit().await?;
         }
@@ -197,15 +192,15 @@ pub async fn handle_deploy_project(
     }
     trx.close().await;
 
-    let res = update_project_diagram(cmd.project_id).await?;
+    let res = update_project_diagram(project_id).await?;
     let rocks_db = get_rocks_db().await;
     let res_bytes = serde_json::to_vec(&res)?;
-    let key = get_diagram_update_dt(cmd.project_id);
+    let key = get_diagram_update_dt(project_id);
     rocks_db
         .insert(key.as_bytes(), Utc::now().to_rfc3339().as_bytes())
         .await?;
 
-    let key = get_diagram_key(cmd.project_id);
+    let key = get_diagram_key(project_id);
     rocks_db.insert(key.as_bytes(), &res_bytes).await?;
 
     Ok(())

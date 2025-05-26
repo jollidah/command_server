@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO block_storage (\n            project_id,\n            region,\n            id,\n            mount_id,\n            attached_to_instance,\n            size_gb,\n            label,\n            x,\n            y\n        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Varchar",
+        "Uuid",
+        "Int8",
+        "Varchar",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0de6918a1493c84c34ed8fd4953684b0723e9ce206b87312150f8b099de9706b"
+}

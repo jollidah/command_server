@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            project_id,\n            region_id,\n            id,\n            status,\n            plan,\n            database_engine as \"database_engine:_\",\n            database_engine_version,\n            latest_backup,\n            label,\n            x,\n            y\n        FROM managed_database \n        WHERE project_id = $1\n        ",
+  "query": "\n        SELECT\n            project_id,\n            region,\n            id,\n            status,\n            plan,\n            database_engine as \"database_engine:_\",\n            database_engine_version,\n            latest_backup,\n            label,\n            x,\n            y\n        FROM managed_database \n        WHERE project_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "region_id",
+        "name": "region",
         "type_info": "Varchar"
       },
       {
@@ -88,5 +88,5 @@
       false
     ]
   },
-  "hash": "889824d409c56a5dae10c9680e49f855ee358bb9bc8e43815592a71b86e79f2e"
+  "hash": "f4040f686aabff98ab8c44229a809c0e43377447a7742d59a5f07a56b852823f"
 }

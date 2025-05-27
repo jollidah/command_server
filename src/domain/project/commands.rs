@@ -338,18 +338,14 @@ impl DeployProject {
                             let res = command.execute(context.vultr_client).await?;
                             let compute: Compute = serde_json::from_value(res.clone())?;
                             insert_compute(&compute, trx).await?;
-                            res.get("id")
-                                .ok_or_else(|| ServiceError::NotFound)?
-                                .to_string()
+                            res
                         }
                         name if name.contains("CreateBlockStorage") => {
                             let command: CreateBlockStorage = serde_json::from_value(request.data)?;
                             let res = command.execute(context.vultr_client).await?;
                             let block_storage: BlockStorage = serde_json::from_value(res.clone())?;
                             insert_block_storage(&block_storage, trx).await?;
-                            res.get("id")
-                                .ok_or_else(|| ServiceError::NotFound)?
-                                .to_string()
+                            res
                         }
                         name if name.contains("CreateFirewallGroup") => {
                             let command: CreateFirewallGroup =
@@ -358,18 +354,15 @@ impl DeployProject {
                             let firewall_group: FirewallGroup =
                                 serde_json::from_value(res.clone())?;
                             insert_firewall_group(&firewall_group, trx).await?;
-                            res.get("id")
-                                .ok_or_else(|| ServiceError::NotFound)?
-                                .to_string()
+                            res
                         }
                         name if name.contains("CreateFirewallRule") => {
-                            let command: CreateFirewallRule = serde_json::from_value(request.data)?;
+                            let mut command: CreateFirewallRule = serde_json::from_value(request.data.clone())?;
+                            command.firewall_group_id = Uuid::from_str(&context.get_id_with_temp_id(&command.firewall_group_id.to_string()).unwrap_or(command.firewall_group_id.to_string())).unwrap();
                             let res = command.execute(context.vultr_client).await?;
                             let firewall_rule: FirewallRule = serde_json::from_value(res.clone())?;
                             insert_firewall_rule(&firewall_rule, trx).await?;
-                            res.get("id")
-                                .ok_or_else(|| ServiceError::NotFound)?
-                                .to_string()
+                            res
                         }
                         name if name.contains("CreateManagedDatabase") => {
                             let command: CreateManagedDatabase =
@@ -378,9 +371,7 @@ impl DeployProject {
                             let managed_database: ManagedDatabase =
                                 serde_json::from_value(res.clone())?;
                             insert_managed_database(&managed_database, trx).await?;
-                            res.get("id")
-                                .ok_or_else(|| ServiceError::NotFound)?
-                                .to_string()
+                            res
                         }
                         name if name.contains("CreateObjectStorage") => {
                             let command: CreateObjectStorage =
@@ -389,75 +380,110 @@ impl DeployProject {
                             let object_storage: ObjectStorage =
                                 serde_json::from_value(res.clone())?;
                             insert_object_storage(&object_storage, trx).await?;
-                            res.get("id")
-                                .ok_or_else(|| ServiceError::NotFound)?
-                                .to_string()
+                            res
                         }
                         _ => return Err(ServiceError::NotFound),
-                    };
+                    }.get("id")
+                    .ok_or_else(|| ServiceError::NotFound)?
+                    .to_string();
                     context.resource_map.insert(request.temp_id, id);
                 }
                 name if name.contains("Update") => {
-                    let id = context.get_id_with_temp_id(&request.temp_id)?;
+                    
                     match request.command_name.as_str() {
                         name if name.contains("UpdateCompute") => {
-                            let command: UpdateCompute = serde_json::from_value(request.data)?;
+                            let mut command: UpdateCompute = serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
                             let res = command.execute(context.vultr_client).await?.unwrap();
                             let compute: Compute = serde_json::from_value(res.clone())?;
                             update_compute(&compute, trx).await?;
                         }
                         name if name.contains("UpdateBlockStorage") => {
-                            let command: UpdateBlockStorage = serde_json::from_value(request.data)?;
+                            let mut command: UpdateBlockStorage = serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?.unwrap();
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             let block_storage: BlockStorage = GetBlockStorage::new(id)
                                 .execute(context.vultr_client)
                                 .await?;
                             update_block_storage(&block_storage, trx).await?;
                         }
                         name if name.contains("AttachBlockStorageToCompute") => {
-                            let command: AttachBlockStorageToCompute =
+                            let mut command: AttachBlockStorageToCompute =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?.unwrap();
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             let block_storage: BlockStorage = GetBlockStorage::new(id)
                                 .execute(context.vultr_client)
                                 .await?;
                             update_block_storage(&block_storage, trx).await?;
                         }
                         name if name.contains("DetachBlockStorageFromCompute") => {
-                            let command: DetachBlockStorageFromCompute =
+                            let mut command: DetachBlockStorageFromCompute =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?.unwrap();
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             let block_storage: BlockStorage = GetBlockStorage::new(id)
                                 .execute(context.vultr_client)
                                 .await?;
                             update_block_storage(&block_storage, trx).await?;
                         }
                         name if name.contains("UpdateFirewallGroup") => {
-                            let command: UpdateFirewallGroup =
+                            let mut command: UpdateFirewallGroup =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?.unwrap();
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             let firewall_group: FirewallGroup = GetFirewallGroup::new(id)
                                 .execute(context.vultr_client)
                                 .await?;
                             update_firewall_group(&firewall_group, trx).await?;
                         }
                         name if name.contains("UpdateManagedDatabase") => {
-                            let command: UpdateManagedDatabase =
+                            let mut command: UpdateManagedDatabase =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
                             let res = command.execute(context.vultr_client).await?.unwrap();
                             let managed_database: ManagedDatabase =
                                 serde_json::from_value(res.clone())?;
                             update_managed_database(&managed_database, trx).await?;
                         }
                         name if name.contains("UpdateObjectStorage") => {
-                            let command: UpdateObjectStorage =
+                            let mut command: UpdateObjectStorage =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?.unwrap();
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             let object_storage: ObjectStorage = GetObjectStorage::new(id)
                                 .execute(context.vultr_client)
                                 .await?;
@@ -467,45 +493,79 @@ impl DeployProject {
                     }
                 }
                 name if name.contains("Delete") => {
-                    let id = context.get_id_with_temp_id(&request.temp_id)?;
                     match request.command_name.as_str() {
                         name if name.contains("DeleteCompute") => {
-                            let command: DeleteCompute = serde_json::from_value(request.data)?;
+                            let mut command: DeleteCompute = serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?;
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             delete_compute(&context.project_id, &id, trx).await?;
                         }
                         name if name.contains("DeleteBlockStorage") => {
-                            let command: DeleteBlockStorage = serde_json::from_value(request.data)?;
+                            let mut command: DeleteBlockStorage = serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?;
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             delete_block_storage(&context.project_id, &id, trx).await?;
                         }
                         name if name.contains("DeleteFirewallGroup") => {
-                            let command: DeleteFirewallGroup =
+                            let mut command: DeleteFirewallGroup =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?;
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             delete_firewall_group(&context.project_id, &id, trx).await?;
                         }
                         name if name.contains("DeleteFirewallRule") => {
-                            let command: DeleteFirewallRule = serde_json::from_value(request.data)?;
+                            let mut command: DeleteFirewallRule = serde_json::from_value(request.data)?;
+                            command.firewall_rule_id = if let Ok(firewall_rule_id) = context.get_id_with_temp_id(&request.temp_id) {
+                                i64::from_str(&firewall_rule_id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.firewall_rule_id
+                            };
+                            command.firewall_group_id = if let Ok(firewall_group_id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&firewall_group_id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.firewall_group_id
+                            };
+                            let firewall_rule_id = command.firewall_rule_id;
                             command.execute(context.vultr_client).await?;
-                            let id = i64::from_str(&id).map_err(|_| ServiceError::NotFound)?;
-                            delete_firewall_rule(&context.project_id, &id, trx).await?;
+                            delete_firewall_rule(&context.project_id, &firewall_rule_id, trx).await?;
                         }
                         name if name.contains("DeleteManagedDatabase") => {
-                            let command: DeleteManagedDatabase =
+                            let mut command: DeleteManagedDatabase =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?;
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             delete_managed_database(&context.project_id, &id, trx).await?;
                         }
                         name if name.contains("DeleteObjectStorage") => {
-                            let command: DeleteObjectStorage =
+                            let mut command: DeleteObjectStorage =
                                 serde_json::from_value(request.data)?;
+                            command.id = if let Ok(id) = context.get_id_with_temp_id(&request.temp_id) {
+                                Uuid::from_str(&id).map_err(|err| ServiceError::ParsingError(Box::new(err)))?
+                            } else {
+                                command.id
+                            };
+                            let id = command.id;
                             command.execute(context.vultr_client).await?;
-                            let id = Uuid::from_str(&id).map_err(|_| ServiceError::NotFound)?;
                             delete_object_storage(&context.project_id, &id, trx).await?;
                         }
                         _ => return Err(ServiceError::NotFound),

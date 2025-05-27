@@ -33,14 +33,14 @@ pub struct GetManagedDatabase {
 #[derive(Serialize, Deserialize)]
 pub struct UpdateManagedDatabase {
     #[serde(skip_serializing)]
-    pub id: Option<Uuid>, // Use id as path parameter
+    pub id: Uuid, // Use id as path parameter
     plan: String,
     label: String,
 }
 #[derive(Serialize, Deserialize)]
 pub struct DeleteManagedDatabase {
     // This id can be None if the id is not assigned yet
-    pub id: Option<Uuid>,
+    pub id: Uuid,
 }
 #[allow(refining_impl_trait)]
 impl ExecuteVultrCreateCommand for CreateManagedDatabase {
@@ -56,9 +56,8 @@ impl ExecuteVultrCreateCommand for CreateManagedDatabase {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for UpdateManagedDatabase {
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         let response = vultr_client
-            .build_request(Method::PUT, format!("databases/{}", id))
+            .build_request(Method::PUT, format!("databases/{}", self.id))
             .send()
             .await?;
         Ok(Some(
@@ -70,9 +69,8 @@ impl ExecuteVultrUpdateCommand for UpdateManagedDatabase {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrDeleteCommand for DeleteManagedDatabase {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::DELETE, format!("databases/{}", id))
+            .build_request(Method::DELETE, format!("databases/{}", self.id))
             .send()
             .await?;
         Ok(())

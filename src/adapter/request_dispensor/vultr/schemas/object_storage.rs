@@ -34,12 +34,12 @@ pub struct GetObjectStorage {
 #[derive(Serialize, Deserialize)]
 pub struct DeleteObjectStorage {
     // This id can be None if the id is not assigned yet
-    pub id: Option<Uuid>,
+    pub id: Uuid,
 }
 #[derive(Serialize, Deserialize)]
 pub struct UpdateObjectStorage {
     #[serde(skip_serializing)]
-    pub id: Option<Uuid>, // Use id as path parameter
+    pub id: Uuid, // Use id as path parameter
     label: String,
 }
 impl GetObjectStorage {
@@ -70,9 +70,8 @@ impl ExecuteVultrGetCommand for GetObjectStorage {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrDeleteCommand for DeleteObjectStorage {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::DELETE, format!("object-storage/{}", id))
+            .build_request(Method::DELETE, format!("object-storage/{}", self.id))
             .send()
             .await?;
         Ok(())
@@ -81,9 +80,8 @@ impl ExecuteVultrDeleteCommand for DeleteObjectStorage {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for UpdateObjectStorage {
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::PUT, format!("object-storage/{}", id))
+            .build_request(Method::PUT, format!("object-storage/{}", self.id))
             .send()
             .await?;
         Ok(None)

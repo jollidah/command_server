@@ -12,6 +12,7 @@ use crate::{adapter::request_dispensor::vultr::VultrClient, errors::ServiceError
 
 pub mod commands;
 pub mod diagrams;
+pub mod conversions;
 pub mod enums;
 
 #[allow(unused)]
@@ -110,7 +111,7 @@ impl VultrExecutionContext {
             resource_map: HashMap::new(),
         }
     }
-    pub fn get_id_with_temp_id(&mut self, temp_id: &String) -> Result<String, ServiceError> {
+    fn get_id_with_temp_id(&mut self, temp_id: &String) -> Result<String, ServiceError> {
         self.resource_map
             .get(temp_id)
             .ok_or(ServiceError::NotFound)

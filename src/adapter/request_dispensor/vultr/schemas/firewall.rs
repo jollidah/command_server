@@ -37,18 +37,18 @@ impl GetFirewallGroup {
 }
 #[derive(Serialize, Deserialize)]
 pub struct UpdateFirewallGroup {
-    pub id: Option<Uuid>,
+    pub id: Uuid,
     description: String,
 }
 #[derive(Serialize, Deserialize)]
 pub struct DeleteFirewallGroup {
     // This id can be None if the id is not assigned yet
-    pub id: Option<Uuid>,
+    pub id: Uuid,
 }
 #[derive(Serialize, Deserialize)]
 pub struct CreateFirewallRule {
     #[serde(skip_serializing)]
-    firewall_group_id: Uuid, // Use id as path parameter
+    pub firewall_group_id: Uuid, // Use id as path parameter
     ip_type: IpType,
     protocol: Protocol,
     port: String,
@@ -64,9 +64,9 @@ pub struct ListFirewallRule {
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteFirewallRule {
-    firewall_group_id: Uuid,
+    pub firewall_group_id: Uuid,
     // This id can be None if the id is not assigned yet
-    pub firewall_rule_id: Option<i64>,
+    pub firewall_rule_id: i64,
 }
 
 #[derive(Serialize)]
@@ -101,9 +101,8 @@ impl ExecuteVultrGetCommand for GetFirewallGroup {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for UpdateFirewallGroup {
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::PUT, format!("firewalls/{}", id))
+            .build_request(Method::PUT, format!("firewalls/{}", self.id))
             .json(&serde_json::json!(self))
             .send()
             .await?;
@@ -115,9 +114,8 @@ impl ExecuteVultrUpdateCommand for UpdateFirewallGroup {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrDeleteCommand for DeleteFirewallGroup {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::DELETE, format!("firewalls/{}", id))
+            .build_request(Method::DELETE, format!("firewalls/{}", self.id))
             .send()
             .await?;
 
@@ -144,15 +142,12 @@ impl ExecuteVultrCreateCommand for CreateFirewallRule {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrDeleteCommand for DeleteFirewallRule {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
-        let firewall_rule_id = self
-            .firewall_rule_id
-            .ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
             .build_request(
                 Method::DELETE,
                 format!(
                     "firewalls/{}/rules/{}",
-                    self.firewall_group_id, firewall_rule_id
+                    self.firewall_group_id, self.firewall_rule_id
                 ),
             )
             .send()

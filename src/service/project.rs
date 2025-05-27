@@ -280,9 +280,7 @@ mod tests {
         adapter::repositories::{
             connection_pool,
             project::workspace::{get_project, get_user_role},
-        },
-        domain::auth::{commands::CreateUserAccount, private_key::PublicKey, UserAccountAggregate},
-        service::auth::tests::create_user_account_helper,
+        }, config::{self, get_config}, domain::{auth::{commands::CreateUserAccount, private_key::PublicKey, UserAccountAggregate}, project::{commands::CommandRequest, diagrams::ObjectPosition}}, service::auth::tests::create_user_account_helper
     };
 
     pub async fn create_project_helper() -> (UserAccountAggregate, ProjectAggregate, CurrentUser) {
@@ -485,6 +483,80 @@ mod tests {
         assert_eq!(public_key_1, public_key_2);
         assert_eq!(decoded_token, tmp_api_key);
     }
+
+    #[tokio::test]
+    async fn test_deploy_project() {
+        // GIVEN
+        let (_, project, current_user) = create_project_helper().await;
+        // register vultr api key
+        let register_vult_api_key_cmd = RegisterVultApiKey {
+            project_id: project.id,
+            api_key: get_config().test_vultr_api_key.clone(),
+        };
+        handle_register_vultr_api_key(register_vult_api_key_cmd, current_user.clone())
+            .await
+            .unwrap();
+        let deploy_project_cmd = DeployProject {
+            project_id: project.id,
+            command_list: vec![
+                CommandRequest {
+                    command_name: "CreateFirewallGroup".to_string(),
+                    temp_id: "firewall_group_1".to_string(),
+                    position: ObjectPosition {
+                        x: 0,
+                        y: 0,
+                    },
+                    data: json!({
+                        "description": "test",
+                    }),
+                },
+                CommandRequest {
+                    command_name: "CreateFirewallRule".to_string(),
+                    temp_id: "firewall_rule_1".to_string(),
+                    position: ObjectPosition {
+                        x: 0,
+                        y: 0,
+                    },
+                    data: json!({
+                        "firewall_group_id": "firewall_group_1",
+                        "ip_type": "v4",
+                        "protocol": "TCP",
+                        "port": "22",
+                        "subnet": "0.0.0.0/0",
+                        "subnet_size": 32,
+                        "notes": "test",
+                    }),
+                },
+                CommandRequest {
+                    command_name: "DeleteFirewallRule".to_string(),
+                    temp_id: "firewall_rule_1".to_string(),
+                    position: ObjectPosition {
+                        x: 0,
+                        y: 0,
+                    },
+                    data: json!({
+                        "firewall_group_id": "firewall_group_1",
+                        "firewall_rule_id": "firewall_rule_1",
+                    }),
+                },
+                CommandRequest {
+                    command_name: "DeleteFirewallGroup".to_string(),
+                    temp_id: "firewall_group_1".to_string(),
+                    position: ObjectPosition {
+                        x: 0,
+                        y: 0,
+                    },
+                    data: json!({
+                        "firewall_group_id": "firewall_group_1",
+                    }),
+                },
+            ],
+        };
+        handle_deploy_project(deploy_project_cmd, current_user.clone())
+            .await
+            .unwrap();
+    }
+
     // #[tokio::test]
     // async fn test_register_vult_api_key() {
     //     // GIVEN

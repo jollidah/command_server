@@ -34,7 +34,7 @@ pub struct GetCompute {
 #[derive(Serialize, Deserialize)]
 pub struct UpdateCompute {
     #[serde(skip_serializing)]
-    pub id: Option<Uuid>, // Use id as path parameter
+    pub id: Uuid, // Use id as path parameter
     backups: BackupStatus,
     firewall_group_id: String,
     os_id: i64,
@@ -45,7 +45,7 @@ pub struct UpdateCompute {
 #[derive(Serialize, Deserialize)]
 pub struct DeleteCompute {
     // This id can be None if the id is not assigned yet
-    pub id: Option<Uuid>,
+    pub id: Uuid,
 }
 
 // pub struct VultrCreateCommand {
@@ -67,9 +67,8 @@ impl ExecuteVultrCreateCommand for CreateCompute {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrUpdateCommand for UpdateCompute {
     async fn execute(self, vultr_client: &VultrClient) -> Result<Option<Value>, ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         let response = vultr_client
-            .build_request(Method::PUT, format!("instances/{}", id))
+            .build_request(Method::PUT, format!("instances/{}", self.id))
             .send()
             .await?;
         Ok(Some(
@@ -81,9 +80,8 @@ impl ExecuteVultrUpdateCommand for UpdateCompute {
 #[allow(refining_impl_trait)]
 impl ExecuteVultrDeleteCommand for DeleteCompute {
     async fn execute(self, vultr_client: &VultrClient) -> Result<(), ServiceError> {
-        let id = self.id.ok_or_else(|| ServiceError::NotFound)?;
         vultr_client
-            .build_request(Method::DELETE, format!("instances/{}", id))
+            .build_request(Method::DELETE, format!("instances/{}", self.id))
             .send()
             .await?;
         Ok(())

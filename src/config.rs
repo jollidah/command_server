@@ -9,6 +9,7 @@ pub struct Config {
     pub gmail_app_password: String,
     pub jwt_secret: String,
     pub architector_server_url: String,
+    pub test_vultr_api_key: String,
 }
 
 impl Config {
@@ -28,6 +29,7 @@ impl Config {
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
             architector_server_url: std::env::var("ARCHITECTOR_SERVER_URL")
                 .unwrap_or_else(|_| "http://localhost:8000".to_string()),
+            test_vultr_api_key: std::env::var("TEST_VULTR_API_KEY").unwrap_or_else(|_| "test_api_key".to_string()),
         })
     }
 }

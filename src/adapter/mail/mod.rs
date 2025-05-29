@@ -36,7 +36,7 @@ impl EmailType<'_> {
                 code
             ),
             EmailType::ProjectInvitation(project_id) => format!(
-                "You have been invited to join the project\nTo accept this invitation, please visit the following URL:something/project/{}\n\nNote: For security reasons, you must be a registered member to join the project.",
+                "You have been invited to join the project\nTo accept this invitation, please visit the following URL: https://autcloud-fe.vercel.app/project/{}\n\nNote: For security reasons, you must be a registered member to join the project.",
                 project_id
             ),
         }

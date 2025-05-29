@@ -120,7 +120,7 @@ impl ResourceResponse {
 pub struct CommandList {
     pub command_list: Vec<CommandRequest>,
 }
-
+#[allow(unused)]
 impl CommandList {
     pub async fn execute(
         self,
